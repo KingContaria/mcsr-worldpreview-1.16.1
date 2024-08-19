@@ -69,6 +69,9 @@ public abstract class ServerChunkManagerMixin {
     @Unique
     private double aspectRatio;
 
+    @Unique
+    private final Object CAMERA_LOCK = new Object();
+
     @Inject(
             method = "tick()Z",
             at = @At("RETURN")
@@ -113,7 +116,7 @@ public abstract class ServerChunkManagerMixin {
         Vec3d cameraPos;
         float pitch;
         float yaw;
-        synchronized (camera) {
+        synchronized (CAMERA_LOCK) {
             cameraPos = camera.getPos();
             pitch = camera.getPitch();
             yaw = camera.getYaw();
