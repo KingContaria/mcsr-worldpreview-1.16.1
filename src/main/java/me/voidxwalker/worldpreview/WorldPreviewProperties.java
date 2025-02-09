@@ -141,7 +141,7 @@ public class WorldPreviewProperties extends DrawableHelper {
 
         profiler.swap("update_player_size");
         // clip the player into swimming/crawling mode if necessary
-        ((PlayerEntityAccessor) this.player).worldpreview$updateSize();
+        ((PlayerEntityAccessor) this.player).worldpreview$updatePose();
 
         profiler.swap("tick_new_entities");
         for (Entity entity : this.world.getEntities()) {
@@ -225,7 +225,7 @@ public class WorldPreviewProperties extends DrawableHelper {
                 button.render(matrices, mouseX, mouseY, delta);
             }
         } else {
-            this.drawCenteredText(matrices, MinecraftClient.getInstance().textRenderer, TextUtil.translatable("menu.paused"), width / 2, 10, 16777215);
+            DrawableHelper.drawCenteredText(matrices, MinecraftClient.getInstance().textRenderer, TextUtil.translatable("menu.paused"), width / 2, 10, 16777215);
         }
     }
 

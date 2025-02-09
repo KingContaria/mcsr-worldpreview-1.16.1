@@ -49,7 +49,7 @@ public abstract class WorldRendererMixin {
     }
 
     @ModifyExpressionValue(
-            method = "reload",
+            method = "reload*",
             at = @At(
                     value = "INVOKE",
                     target = "Lnet/minecraft/client/MinecraftClient;isFabulousGraphicsOrBetter()Z"

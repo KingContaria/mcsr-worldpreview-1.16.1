@@ -8,13 +8,14 @@ import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.network.ClientPlayNetworkHandler;
 import net.minecraft.client.network.ClientPlayerEntity;
 import net.minecraft.client.network.ClientPlayerInteractionManager;
+import net.minecraft.client.option.Perspective;
 import net.minecraft.client.render.Camera;
 import net.minecraft.client.render.WorldRenderer;
 import net.minecraft.client.render.entity.PlayerModelPart;
 import net.minecraft.client.world.ClientWorld;
 import net.minecraft.entity.EntityType;
-import net.minecraft.nbt.CompoundTag;
-import net.minecraft.nbt.ListTag;
+import net.minecraft.nbt.NbtCompound;
+import net.minecraft.nbt.NbtList;
 import net.minecraft.network.Packet;
 import net.minecraft.network.packet.s2c.play.*;
 import net.minecraft.scoreboard.ScoreboardObjective;
@@ -80,7 +81,6 @@ public class WorldPreview {
                 networkHandler,
                 new ClientWorld.Properties(serverWorld.getDifficulty(), serverWorld.getServer().isHardcore(), serverWorld.isFlat()),
                 serverWorld.getRegistryKey(),
-                serverWorld.getDimensionRegistryKey(),
                 serverWorld.getDimension(),
                 // WorldPreviews Chunk Distance is one lower than Minecraft's chunkLoadDistance,
                 // when it's at 1 only the chunk the player is in gets sent
@@ -101,7 +101,7 @@ public class WorldPreview {
         // to the ServerPlayer's as would be done in the ClientPlayNetworkHandler
         player.setEntityId(fakePlayer.getEntityId());
         // copy the inventory from the server player, for mods like icarus to render given items on preview
-        player.inventory.deserialize(fakePlayer.inventory.serialize(new ListTag()));
+        player.inventory.readNbt(fakePlayer.inventory.writeNbt(new NbtList()));
         player.inventory.selectedSlot = fakePlayer.inventory.selectedSlot;
         // reset the randomness introduced to the yaw in LivingEntity#<init>
         player.headYaw = player.yaw = 0.0F;
@@ -115,9 +115,9 @@ public class WorldPreview {
         // This part is not actually relevant for previewing new worlds,
         // I just personally like the idea of worldpreview principally being able to work on old worlds as well
         // same with sending world info and scoreboard data
-        CompoundTag playerData = serverWorld.getServer().getSaveProperties().getPlayerData();
+        NbtCompound playerData = serverWorld.getServer().getSaveProperties().getPlayerData();
         if (playerData != null) {
-            player.fromTag(playerData);
+            player.readNbt(playerData);
 
             // see ServerPlayerEntity#readCustomDataFromTag
             if (playerData.contains("playerGameType", 99)) {
@@ -126,12 +126,12 @@ public class WorldPreview {
 
             // see LivingEntity#readCustomDataFromTag, only gets read on server worlds
             if (playerData.contains("Attributes", 9)) {
-                player.getAttributes().fromTag(playerData.getList("Attributes", 10));
+                player.getAttributes().readNbt(playerData.getList("Attributes", 10));
             }
 
             // see PlayerManager#onPlayerConnect
             if (playerData.contains("RootVehicle", 10)) {
-                CompoundTag vehicleData = playerData.getCompound("RootVehicle");
+                NbtCompound vehicleData = playerData.getCompound("RootVehicle");
                 UUID uUID = vehicleData.containsUuid("Attach") ? vehicleData.getUuid("Attach") : null;
                 EntityType.loadEntityWithPassengers(vehicleData.getCompound("Entity"), serverWorld, entity -> {
                     entity.world = world;
@@ -153,7 +153,7 @@ public class WorldPreview {
         // see PlayerManager#sendWorldInfo
         packetQueue.add(new WorldBorderS2CPacket(serverWorld.getWorldBorder(), WorldBorderS2CPacket.Type.INITIALIZE));
         packetQueue.add(new WorldTimeUpdateS2CPacket(serverWorld.getTime(), serverWorld.getTimeOfDay(), serverWorld.getGameRules().getBoolean(GameRules.DO_DAYLIGHT_CYCLE)));
-        packetQueue.add(new PlayerSpawnPositionS2CPacket(serverWorld.getSpawnPos()));
+        packetQueue.add(new PlayerSpawnPositionS2CPacket(serverWorld.getSpawnPos(), serverWorld.getSpawnAngle()));
         if (serverWorld.isRaining()) {
             packetQueue.add(new GameStateChangeS2CPacket(GameStateChangeS2CPacket.RAIN_STARTED, 0.0f));
             packetQueue.add(new GameStateChangeS2CPacket(GameStateChangeS2CPacket.RAIN_GRADIENT_CHANGED, serverWorld.getRainGradient(1.0f)));
@@ -202,8 +202,8 @@ public class WorldPreview {
 
         // camera has to be updated early for chunk/entity data culling to work
         // we pass the fake player, so we know the call comes from here in CameraMixin#modifyCameraY
-        int perspective = MinecraftClient.getInstance().options.perspective;
-        camera.update(world, fakePlayer, perspective > 0, perspective == 2, 1.0f);
+        Perspective perspective = MinecraftClient.getInstance().options.getPerspective();
+        camera.update(world, fakePlayer, !perspective.isFirstPerson(), perspective.isFrontView(), 1.0f);
 
         set(world, player, interactionManager, camera, packetQueue);
         return true;

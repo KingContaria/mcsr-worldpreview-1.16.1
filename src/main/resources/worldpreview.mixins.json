@@ -24,7 +24,6 @@
     "parity.EntityMixin",
     "parity.SpawnLocatingMixin",
     "server.ChunkHolderMixin",
-    "server.IntegratedServerMixin",
     "server.MinecraftServerMixin",
     "server.ServerPlayerEntityMixin",
     "server.ThreadedAnvilChunkStorageMixin"

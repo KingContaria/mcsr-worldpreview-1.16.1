@@ -17,7 +17,6 @@ import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.network.ClientPlayerEntity;
 import net.minecraft.client.render.Camera;
 import net.minecraft.client.render.Frustum;
-import net.minecraft.client.util.math.Vector3f;
 import net.minecraft.entity.Entity;
 import net.minecraft.network.Packet;
 import net.minecraft.network.packet.s2c.play.ChunkDataS2CPacket;
@@ -112,8 +111,8 @@ public abstract class ThreadedAnvilChunkStorageMixin implements WPThreadedAnvilC
             // see GameRenderer#renderWorld
             Matrix4f rotationMatrix = new Matrix4f();
             rotationMatrix.loadIdentity();
-            rotationMatrix.multiply(Vector3f.POSITIVE_X.getDegreesQuaternion(pitch));
-            rotationMatrix.multiply(Vector3f.POSITIVE_Y.getDegreesQuaternion(yaw + 180.0f));
+            rotationMatrix.multiply(Vec3f.POSITIVE_X.getDegreesQuaternion(pitch));
+            rotationMatrix.multiply(Vec3f.POSITIVE_Y.getDegreesQuaternion(yaw + 180.0f));
 
             // see GameRenderer#getBasicProjectionMatrix
             Matrix4f projectionMatrix = new Matrix4f();
@@ -150,7 +149,7 @@ public abstract class ThreadedAnvilChunkStorageMixin implements WPThreadedAnvilC
 
         List<Packet<?>> chunkPackets = new ArrayList<>();
 
-        chunkPackets.add(new ChunkDataS2CPacket(chunk, 65535, true));
+        chunkPackets.add(new ChunkDataS2CPacket(chunk, 65535));
         ((WPChunkHolder) holder).worldpreview$flushUpdates();
         chunkPackets.add(new LightUpdateS2CPacket(chunk.getPos(), chunk.getLightingProvider(), true));
         chunkPackets.addAll(this.processNeighborChunks(pos));
@@ -214,7 +213,7 @@ public abstract class ThreadedAnvilChunkStorageMixin implements WPThreadedAnvilC
     @Unique
     private void sendData(Queue<Packet<?>> packetQueue, ClientPlayerEntity player, WorldChunk chunk) {
         ChunkPos pos = chunk.getPos();
-        if (pos.getChebyshevDistance(new ChunkPos(player.getBlockPos())) > WorldPreview.config.chunkDistance) {
+        if (pos.method_24022(new ChunkPos(player.getBlockPos())) > WorldPreview.config.chunkDistance) {
             return;
         }
 
@@ -284,7 +283,7 @@ public abstract class ThreadedAnvilChunkStorageMixin implements WPThreadedAnvilC
 
     @Unique
     private WorldChunk getWorldChunk(ChunkHolder holder) {
-        Either<Chunk, ChunkHolder.Unloaded> either = holder.getNowFuture(ChunkStatus.FULL).getNow(null);
+        Either<Chunk, ChunkHolder.Unloaded> either = holder.getFutureFor(ChunkStatus.FULL).getNow(null);
         if (either == null) {
             return null;
         }
@@ -297,7 +296,7 @@ public abstract class ThreadedAnvilChunkStorageMixin implements WPThreadedAnvilC
 
     @Unique
     private ChunkDataS2CPacket createEmptyChunkPacket(WorldChunk chunk) {
-        return new ChunkDataS2CPacket(new WorldChunk(chunk.getWorld(), chunk.getPos(), chunk.getBiomeArray()), 65535, true);
+        return new ChunkDataS2CPacket(new WorldChunk(chunk.getWorld(), chunk.getPos(), chunk.getBiomeArray()), 65535);
     }
 
     @Override
@@ -318,7 +317,7 @@ public abstract class ThreadedAnvilChunkStorageMixin implements WPThreadedAnvilC
         this.updateFrustum(properties.player, properties.camera);
 
         for (ChunkHolder holder : this.chunkHolders.values()) {
-            Either<Chunk, ChunkHolder.Unloaded> either = holder.getNowFuture(ChunkStatus.FULL).getNow(null);
+            Either<Chunk, ChunkHolder.Unloaded> either = holder.getFutureFor(ChunkStatus.FULL).getNow(null);
             if (either == null) {
                 continue;
             }

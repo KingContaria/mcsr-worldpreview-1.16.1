@@ -22,7 +22,7 @@ public abstract class SpawnLocatingMixin {
     )
     private static WorldChunk doNotGenerateChunksDuringSpawnCalculation(ServerWorld world, int x, int z, Operation<WorldChunk> original) {
         if (Boolean.TRUE.equals(WorldPreview.CALCULATING_SPAWN.get())) {
-            WorldChunk chunk = (WorldChunk) world.getExistingChunk(x, z);
+            WorldChunk chunk = (WorldChunk) world.getChunkAsView(x, z);
             if (chunk == null) {
                 throw WorldPreviewMissingChunkException.INSTANCE;
             }

@@ -13,6 +13,6 @@ public interface PlayerEntityAccessor {
         throw new UnsupportedOperationException();
     }
 
-    @Invoker("updateSize")
-    void worldpreview$updateSize();
+    @Invoker("updatePose")
+    void worldpreview$updatePose();
 }
