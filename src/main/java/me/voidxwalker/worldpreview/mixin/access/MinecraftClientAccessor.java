@@ -9,6 +9,6 @@ import org.spongepowered.asm.mixin.gen.Accessor;
 @Mixin(MinecraftClient.class)
 public interface MinecraftClientAccessor {
     @Mutable
-    @Accessor
-    void setWorldRenderer(WorldRenderer worldRenderer);
+    @Accessor("worldRenderer")
+    void worldpreview$setWorldRenderer(WorldRenderer worldRenderer);
 }

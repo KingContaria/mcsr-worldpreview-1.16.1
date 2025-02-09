@@ -25,7 +25,7 @@ public abstract class HeldItemRendererMixin {
     )
     private ItemStack modifyMainHand(ItemStack mainHand) {
         if (WorldPreview.renderingPreview) {
-            return WorldPreview.player.getMainHandStack();
+            return WorldPreview.properties.player.getMainHandStack();
         }
         return mainHand;
     }
@@ -40,7 +40,7 @@ public abstract class HeldItemRendererMixin {
     )
     private ItemStack modifyOffHand(ItemStack offHand) {
         if (WorldPreview.renderingPreview) {
-            return WorldPreview.player.getOffHandStack();
+            return WorldPreview.properties.player.getOffHandStack();
         }
         return offHand;
     }

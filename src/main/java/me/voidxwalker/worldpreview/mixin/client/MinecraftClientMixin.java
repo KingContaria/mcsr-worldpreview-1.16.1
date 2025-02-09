@@ -25,7 +25,6 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
 @Mixin(MinecraftClient.class)
 public abstract class MinecraftClientMixin {
-
     @Shadow
     @Nullable
     public Screen currentScreen;
@@ -48,7 +47,7 @@ public abstract class MinecraftClientMixin {
             cancellable = true
     )
     private void resetPreview(CallbackInfo ci) {
-        if (this.server != null && WorldPreview.inPreview && WorldPreview.kill) {
+        if (this.server != null && WorldPreview.inPreview() && WorldPreview.isKilled()) {
             if (!((WPMinecraftServer) this.server).worldpreview$kill()) {
                 return;
             }
@@ -67,7 +66,7 @@ public abstract class MinecraftClientMixin {
             )
     )
     private boolean smoothTransition(MinecraftClient client, Screen screen) {
-        return !(WorldPreview.inPreview && this.currentScreen instanceof LevelLoadingScreen && screen instanceof ProgressScreen);
+        return !(WorldPreview.inPreview() && this.currentScreen instanceof LevelLoadingScreen && screen instanceof ProgressScreen);
     }
 
     @ModifyExpressionValue(
@@ -79,8 +78,8 @@ public abstract class MinecraftClientMixin {
             )
     )
     private ClientWorld waitOnKilledServers(ClientWorld world) {
-        if (world == null && WorldPreview.inPreview && WorldPreview.kill) {
-            return WorldPreview.world;
+        if (world == null && WorldPreview.inPreview() && WorldPreview.isKilled()) {
+            return WorldPreview.properties.world;
         }
         return world;
     }
@@ -114,12 +113,12 @@ public abstract class MinecraftClientMixin {
             )
     )
     private void logWorldPreviewStart(CallbackInfo ci) {
-        if (WorldPreview.logPreviewStart) {
-            WorldPreview.LOGGER.info("Starting Preview at ({}, {}, {})", WorldPreview.player.getX(), WorldPreview.player.getY(), WorldPreview.player.getZ());
+        if (WorldPreview.shouldLogPreviewStart()) {
+            WorldPreview.LOGGER.info("Starting Preview at ({}, {}, {})", WorldPreview.properties.player.getX(), WorldPreview.properties.player.getY(), WorldPreview.properties.player.getZ());
             if (WorldPreview.HAS_STATEOUTPUT) {
                 StateOutputCompat.outputPreviewing();
             }
-            WorldPreview.logPreviewStart = false;
+            WorldPreview.setLogPreviewStart(false);
         }
     }
 }

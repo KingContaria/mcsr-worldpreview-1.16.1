@@ -8,11 +8,11 @@ import org.spongepowered.asm.mixin.gen.Invoker;
 
 @Mixin(PlayerEntity.class)
 public interface PlayerEntityAccessor {
-    @Accessor
-    static TrackedData<Byte> getPLAYER_MODEL_PARTS() {
+    @Accessor("PLAYER_MODEL_PARTS")
+    static TrackedData<Byte> worldpreview$getPLAYER_MODEL_PARTS() {
         throw new UnsupportedOperationException();
     }
 
-    @Invoker
-    void callUpdateSize();
+    @Invoker("updateSize")
+    void worldpreview$updateSize();
 }

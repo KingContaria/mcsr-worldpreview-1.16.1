@@ -9,15 +9,15 @@ import it.unimi.dsi.fastutil.longs.Long2ObjectLinkedOpenHashMap;
 import it.unimi.dsi.fastutil.longs.LongOpenHashSet;
 import it.unimi.dsi.fastutil.longs.LongSet;
 import me.voidxwalker.worldpreview.WorldPreview;
+import me.voidxwalker.worldpreview.WorldPreviewProperties;
 import me.voidxwalker.worldpreview.interfaces.WPChunkHolder;
 import me.voidxwalker.worldpreview.interfaces.WPThreadedAnvilChunkStorage;
-import me.voidxwalker.worldpreview.mixin.access.ThreadedAnvilChunkStorageAccessor;
+import me.voidxwalker.worldpreview.mixin.access.ThreadedAnvilChunkStorage$EntityTrackerAccessor;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.network.ClientPlayerEntity;
 import net.minecraft.client.render.Camera;
 import net.minecraft.client.render.Frustum;
 import net.minecraft.client.util.math.Vector3f;
-import net.minecraft.client.world.ClientWorld;
 import net.minecraft.entity.Entity;
 import net.minecraft.network.Packet;
 import net.minecraft.network.packet.s2c.play.ChunkDataS2CPacket;
@@ -54,7 +54,7 @@ public abstract class ThreadedAnvilChunkStorageMixin implements WPThreadedAnvilC
 
     @Shadow
     @Final
-    private Int2ObjectMap<ThreadedAnvilChunkStorageAccessor.EntityTrackerAccessor> entityTrackers;
+    private Int2ObjectMap<ThreadedAnvilChunkStorage$EntityTrackerAccessor> entityTrackers;
 
     @Unique
     private final LongSet sentChunks = new LongOpenHashSet();
@@ -306,17 +306,8 @@ public abstract class ThreadedAnvilChunkStorageMixin implements WPThreadedAnvilC
             return;
         }
 
-        ClientWorld world;
-        ClientPlayerEntity player;
-        Camera camera;
-        Queue<Packet<?>> packetQueue;
-        synchronized (WorldPreview.LOCK) {
-            world = WorldPreview.world;
-            player = WorldPreview.player;
-            camera = WorldPreview.camera;
-            packetQueue = WorldPreview.packetQueue;
-        }
-        if (world == null || player == null || camera == null || packetQueue == null) {
+        WorldPreviewProperties properties = WorldPreview.properties;
+        if (properties == null) {
             return;
         }
 
@@ -324,7 +315,7 @@ public abstract class ThreadedAnvilChunkStorageMixin implements WPThreadedAnvilC
             return;
         }
 
-        this.updateFrustum(player, camera);
+        this.updateFrustum(properties.player, properties.camera);
 
         for (ChunkHolder holder : this.chunkHolders.values()) {
             Either<Chunk, ChunkHolder.Unloaded> either = holder.getNowFuture(ChunkStatus.FULL).getNow(null);
@@ -335,7 +326,7 @@ public abstract class ThreadedAnvilChunkStorageMixin implements WPThreadedAnvilC
             if (worldChunk == null) {
                 continue;
             }
-            this.sendData(packetQueue, player, worldChunk);
+            this.sendData(properties.packetQueue, properties.player, worldChunk);
         }
     }
 }

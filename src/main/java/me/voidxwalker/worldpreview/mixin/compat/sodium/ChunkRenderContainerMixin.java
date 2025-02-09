@@ -12,7 +12,6 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
 @Mixin(value = ChunkRenderContainer.class, remap = false)
 public abstract class ChunkRenderContainerMixin {
-
     @Shadow
     @Final
     private int chunkX;
@@ -30,7 +29,7 @@ public abstract class ChunkRenderContainerMixin {
             cancellable = true
     )
     private void doNotWaitForNeighbourChunksOnWall(CallbackInfoReturnable<Boolean> cir) {
-        if (this.data == ChunkRenderData.ABSENT && WorldPreview.renderingPreview && Math.max(Math.abs(this.chunkX - WorldPreview.player.chunkX), Math.abs(this.chunkZ - WorldPreview.player.chunkZ)) < WorldPreview.config.instantRenderDistance) {
+        if (this.data == ChunkRenderData.ABSENT && WorldPreview.renderingPreview && Math.max(Math.abs(this.chunkX - WorldPreview.properties.player.chunkX), Math.abs(this.chunkZ - WorldPreview.properties.player.chunkZ)) < WorldPreview.config.instantRenderDistance) {
             cir.setReturnValue(true);
         }
     }

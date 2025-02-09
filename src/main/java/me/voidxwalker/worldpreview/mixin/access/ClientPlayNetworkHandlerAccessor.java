@@ -7,6 +7,6 @@ import org.spongepowered.asm.mixin.gen.Accessor;
 
 @Mixin(ClientPlayNetworkHandler.class)
 public interface ClientPlayNetworkHandlerAccessor {
-    @Accessor
-    void setWorld(ClientWorld world);
+    @Accessor("world")
+    void worldpreview$setWorld(ClientWorld world);
 }

@@ -6,10 +6,10 @@
   "client": [
     "access.ClientPlayNetworkHandlerAccessor",
     "access.EntityAccessor",
+    "access.GameRendererAccessor",
     "access.MinecraftClientAccessor",
     "access.PlayerEntityAccessor",
-    "access.ThreadedAnvilChunkStorageAccessor",
-    "access.ThreadedAnvilChunkStorageAccessor$EntityTrackerAccessor",
+    "access.ThreadedAnvilChunkStorage$EntityTrackerAccessor",
     "client.CameraMixin",
     "client.ClientPlayNetworkHandlerMixin",
     "client.MinecraftClientMixin",

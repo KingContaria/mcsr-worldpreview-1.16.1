@@ -11,7 +11,6 @@ import org.spongepowered.asm.mixin.injection.At;
 
 @Mixin(InGameHud.class)
 public abstract class InGameHudMixin {
-
     @Shadow
     private ItemStack currentStack;
 
@@ -25,7 +24,7 @@ public abstract class InGameHudMixin {
     )
     private ItemStack modifyCurrentStack(ItemStack currentStack) {
         if (WorldPreview.renderingPreview) {
-            return WorldPreview.player.getMainHandStack();
+            return WorldPreview.properties.player.getMainHandStack();
         }
         return currentStack;
     }
@@ -41,7 +40,8 @@ public abstract class InGameHudMixin {
     private int modifyHeldItemTooltipFade(int heldItemTooltipFade) {
         if (WorldPreview.renderingPreview) {
             // see InGameHud#tick, the check needs to be performed because vanilla doesn't reset InGameHud#currentStack when changing worlds
-            if (WorldPreview.player.getMainHandStack().getItem() == this.currentStack.getItem() && WorldPreview.player.getMainHandStack().getName().equals(this.currentStack.getName())) {
+            ItemStack itemStack = WorldPreview.properties.player.getMainHandStack();
+            if (itemStack.getItem() == this.currentStack.getItem() && itemStack.getName().equals(this.currentStack.getName())) {
                 return heldItemTooltipFade;
             }
             return 40;
