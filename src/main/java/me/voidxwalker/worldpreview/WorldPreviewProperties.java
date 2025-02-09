@@ -1,6 +1,7 @@
 package me.voidxwalker.worldpreview;
 
 import com.mojang.blaze3d.systems.RenderSystem;
+import me.contaria.speedrunapi.util.TextUtil;
 import me.voidxwalker.worldpreview.mixin.access.EntityAccessor;
 import me.voidxwalker.worldpreview.mixin.access.GameRendererAccessor;
 import me.voidxwalker.worldpreview.mixin.access.MinecraftClientAccessor;
@@ -22,7 +23,6 @@ import net.minecraft.network.listener.ClientPlayPacketListener;
 import net.minecraft.network.packet.s2c.play.ChunkDataS2CPacket;
 import net.minecraft.network.packet.s2c.play.EntitySpawnS2CPacket;
 import net.minecraft.network.packet.s2c.play.MobSpawnS2CPacket;
-import net.minecraft.text.TranslatableText;
 import net.minecraft.util.Util;
 import net.minecraft.util.profiler.Profiler;
 import net.minecraft.util.registry.Registry;
@@ -225,20 +225,20 @@ public class WorldPreviewProperties extends DrawableHelper {
                 button.render(matrices, mouseX, mouseY, delta);
             }
         } else {
-            this.drawCenteredText(matrices, MinecraftClient.getInstance().textRenderer, new TranslatableText("menu.paused"), width / 2, 10, 16777215);
+            this.drawCenteredText(matrices, MinecraftClient.getInstance().textRenderer, TextUtil.translatable("menu.paused"), width / 2, 10, 16777215);
         }
     }
 
     public static List<ButtonWidget> createMenu(int width, int height, Runnable returnToGame, Runnable kill) {
         List<ButtonWidget> buttons = new ArrayList<>();
-        buttons.add(new ButtonWidget(width / 2 - 102, height / 4 + 24 - 16, 204, 20, new TranslatableText("menu.returnToGame"), button -> returnToGame.run()));
-        buttons.add(new ButtonWidget(width / 2 - 102, height / 4 + 48 - 16, 98, 20, new TranslatableText("gui.advancements"), NO_OP));
-        buttons.add(new ButtonWidget(width / 2 + 4, height / 4 + 48 - 16, 98, 20, new TranslatableText("gui.stats"), NO_OP));
-        buttons.add(new ButtonWidget(width / 2 - 102, height / 4 + 72 - 16, 98, 20, new TranslatableText("menu.sendFeedback"), NO_OP));
-        buttons.add(new ButtonWidget(width / 2 + 4, height / 4 + 72 - 16, 98, 20, new TranslatableText("menu.reportBugs"), NO_OP));
-        buttons.add(new ButtonWidget(width / 2 - 102, height / 4 + 96 - 16, 98, 20, new TranslatableText("menu.options"), NO_OP));
-        buttons.add(new ButtonWidget(width / 2 + 4, height / 4 + 96 - 16, 98, 20, new TranslatableText("menu.shareToLan"), NO_OP));
-        buttons.add(new ButtonWidget(width / 2 - 102, height / 4 + 120 - 16, 204, 20, new TranslatableText("menu.returnToMenu"), button -> {
+        buttons.add(new ButtonWidget(width / 2 - 102, height / 4 + 24 - 16, 204, 20, TextUtil.translatable("menu.returnToGame"), button -> returnToGame.run()));
+        buttons.add(new ButtonWidget(width / 2 - 102, height / 4 + 48 - 16, 98, 20, TextUtil.translatable("gui.advancements"), NO_OP));
+        buttons.add(new ButtonWidget(width / 2 + 4, height / 4 + 48 - 16, 98, 20, TextUtil.translatable("gui.stats"), NO_OP));
+        buttons.add(new ButtonWidget(width / 2 - 102, height / 4 + 72 - 16, 98, 20, TextUtil.translatable("menu.sendFeedback"), NO_OP));
+        buttons.add(new ButtonWidget(width / 2 + 4, height / 4 + 72 - 16, 98, 20, TextUtil.translatable("menu.reportBugs"), NO_OP));
+        buttons.add(new ButtonWidget(width / 2 - 102, height / 4 + 96 - 16, 98, 20, TextUtil.translatable("menu.options"), NO_OP));
+        buttons.add(new ButtonWidget(width / 2 + 4, height / 4 + 96 - 16, 98, 20, TextUtil.translatable("menu.shareToLan"), NO_OP));
+        buttons.add(new ButtonWidget(width / 2 - 102, height / 4 + 120 - 16, 204, 20, TextUtil.translatable("menu.returnToMenu"), button -> {
             kill.run();
             button.active = false;
         }));

@@ -1,7 +1,7 @@
 package me.voidxwalker.worldpreview;
 
-import org.mcsr.speedrunapi.config.api.SpeedrunConfig;
-import org.mcsr.speedrunapi.config.api.annotations.Config;
+import me.contaria.speedrunapi.config.api.SpeedrunConfig;
+import me.contaria.speedrunapi.config.api.annotations.Config;
 
 public class WorldPreviewConfig implements SpeedrunConfig {
 
