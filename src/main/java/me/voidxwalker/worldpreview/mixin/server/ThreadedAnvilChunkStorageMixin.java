@@ -313,7 +313,7 @@ public abstract class ThreadedAnvilChunkStorageMixin implements WPThreadedAnvilC
             return;
         }
 
-        if (!this.world.getRegistryKey().equals(world.getRegistryKey())) {
+        if (!this.world.getRegistryKey().equals(properties.world.getRegistryKey())) {
             return;
         }
 
