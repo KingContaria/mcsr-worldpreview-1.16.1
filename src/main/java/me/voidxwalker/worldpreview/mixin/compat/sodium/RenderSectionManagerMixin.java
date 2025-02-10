@@ -15,7 +15,7 @@ public abstract class RenderSectionManagerMixin {
             method = "schedulePendingUpdates",
             at = @At(
                     value = "INVOKE",
-                    target = "Lme/jellysquid/mods/sodium/client/render/chunk/ChunkAdjacencyMap;hasNeighbors(II)Z"
+                    target = "Lme/jellysquid/mods/sodium/client/render/chunk/ChunkTracker;hasMergedFlags(III)Z"
             ),
             remap = false
     )

@@ -68,7 +68,8 @@ public class WorldPreview {
                 MinecraftClient.getInstance(),
                 null,
                 null,
-                MinecraftClient.getInstance().getSession().getProfile()
+                MinecraftClient.getInstance().getSession().getProfile(),
+                null
         );
         ClientPlayerInteractionManager interactionManager = new ClientPlayerInteractionManager(
                 MinecraftClient.getInstance(),
@@ -79,9 +80,10 @@ public class WorldPreview {
                 networkHandler,
                 new ClientWorld.Properties(serverWorld.getDifficulty(), serverWorld.getServer().isHardcore(), serverWorld.isFlat()),
                 serverWorld.getRegistryKey(),
-                serverWorld.getDimension(),
+                serverWorld.method_40134(),
                 // WorldPreviews Chunk Distance is one lower than Minecraft's chunkLoadDistance,
                 // when it's at 1 only the chunk the player is in gets sent
+                config.chunkDistance - 1,
                 config.chunkDistance - 1,
                 MinecraftClient.getInstance()::getProfiler,
                 WorldPreview.worldRenderer,

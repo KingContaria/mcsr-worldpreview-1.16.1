@@ -93,7 +93,7 @@ public abstract class ThreadedAnvilChunkStorageMixin implements WPThreadedAnvilC
     @Unique
     private void updateFrustum(ClientPlayerEntity player, Camera camera) {
         MinecraftClient client = MinecraftClient.getInstance();
-        double fov = Math.min(client.options.fov * Math.min(Math.max(player.getSpeed(), 0.1f), 1.5f), 180.0);
+        double fov = Math.min(client.options.fov * Math.min(Math.max(player.getFovMultiplier(), 0.1f), 1.5f), 180.0);
         double aspectRatio = (double) client.getWindow().getFramebufferWidth() / client.getWindow().getFramebufferHeight();
         Vec3d cameraPos;
         float pitch;
@@ -145,8 +145,7 @@ public abstract class ThreadedAnvilChunkStorageMixin implements WPThreadedAnvilC
 
         List<Packet<?>> chunkPackets = new ArrayList<>();
 
-        chunkPackets.add(new ChunkDataS2CPacket(chunk));
-        chunkPackets.add(new LightUpdateS2CPacket(chunk.getPos(), chunk.getWorld().getLightingProvider(), ((WPChunkHolder) holder).worldpreview$getSkyLightUpdateBits(), ((WPChunkHolder) holder).worldpreview$getBlockLightUpdateBits(), true));
+        chunkPackets.add(new ChunkDataS2CPacket(chunk, chunk.getWorld().getLightingProvider(), ((WPChunkHolder) holder).worldpreview$getSkyLightUpdateBits(), ((WPChunkHolder) holder).worldpreview$getBlockLightUpdateBits(), true));
         ((WPChunkHolder) holder).worldpreview$flushUpdates();
         chunkPackets.addAll(this.processNeighborChunks(pos));
 
@@ -167,7 +166,7 @@ public abstract class ThreadedAnvilChunkStorageMixin implements WPThreadedAnvilC
                 }
                 if (this.sentChunks.contains(ChunkPos.toLong(pos.x + x, pos.z + z))) {
                     this.sentEmptyChunks.add(pos.toLong());
-                    return Collections.singletonList(this.createEmptyChunkPacket(chunk));
+                    return Collections.singletonList(this.createEdgeChunkPacket(chunk, this.chunkHolders.get(pos.toLong())));
                 }
             }
         }
@@ -200,7 +199,7 @@ public abstract class ThreadedAnvilChunkStorageMixin implements WPThreadedAnvilC
                         ((WPChunkHolder) neighborHolder).worldpreview$flushUpdates();
                     }
                 } else if (this.culledChunks.contains(neighbor) && !this.sentEmptyChunks.contains(neighbor)) {
-                    packets.add(this.createEmptyChunkPacket(neighborChunk));
+                    packets.add(this.createEdgeChunkPacket(neighborChunk, neighborHolder));
                     this.sentEmptyChunks.add(neighbor);
                 }
             }
@@ -227,7 +226,7 @@ public abstract class ThreadedAnvilChunkStorageMixin implements WPThreadedAnvilC
 
         if (!entityPackets.isEmpty() && chunkPackets.isEmpty()) {
             if (!this.sentChunks.contains(pos.toLong()) && this.sentEmptyChunks.add(pos.toLong())) {
-                chunkPackets = Collections.singletonList(this.createEmptyChunkPacket(chunk));
+                chunkPackets = Collections.singletonList(this.createEdgeChunkPacket(chunk, this.chunkHolders.get(pos.toLong())));
             }
         }
 
@@ -295,8 +294,12 @@ public abstract class ThreadedAnvilChunkStorageMixin implements WPThreadedAnvilC
     }
 
     @Unique
-    private ChunkDataS2CPacket createEmptyChunkPacket(WorldChunk chunk) {
-        return new ChunkDataS2CPacket(new WorldChunk(chunk.getWorld(), chunk.getPos(), chunk.getBiomeArray()));
+    private ChunkDataS2CPacket createEdgeChunkPacket(WorldChunk chunk, ChunkHolder holder) {
+        // This is used to send biome and light data for culled chunks,
+        // ideally we'd only send that data, but it's annoying to do since 1.18
+        ChunkDataS2CPacket packet = new ChunkDataS2CPacket(chunk, chunk.getWorld().getLightingProvider(), ((WPChunkHolder) holder).worldpreview$getSkyLightUpdateBits(), ((WPChunkHolder) holder).worldpreview$getBlockLightUpdateBits(), true);
+        ((WPChunkHolder) holder).worldpreview$flushUpdates();
+        return packet;
     }
 
     @Override

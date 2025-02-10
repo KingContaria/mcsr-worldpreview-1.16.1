@@ -24,18 +24,18 @@ public abstract class GameRendererMixin {
             at = {
                     @At(
                             value = "FIELD",
-                            target = "Lnet/minecraft/client/render/GameRenderer;lastMovementFovMultiplier:F"
+                            target = "Lnet/minecraft/client/render/GameRenderer;lastFovMultiplier:F"
                     ),
                     @At(
                             value = "FIELD",
-                            target = "Lnet/minecraft/client/render/GameRenderer;movementFovMultiplier:F"
+                            target = "Lnet/minecraft/client/render/GameRenderer;fovMultiplier:F"
                     )
             },
             require = 2
     )
     private float modifyMovementFovMultiplier(float movementFovMultiplier) {
         if (WorldPreview.renderingPreview) {
-            return Math.min(Math.max(WorldPreview.properties.player.getSpeed(), 0.1f), 1.5f);
+            return Math.min(Math.max(WorldPreview.properties.player.getFovMultiplier(), 0.1f), 1.5f);
         }
         return movementFovMultiplier;
     }
