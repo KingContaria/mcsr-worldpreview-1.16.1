@@ -8,9 +8,6 @@ public class WorldPreviewConfig implements SpeedrunConfig {
     @Config.Numbers.Whole.Bounds(min = 1, max = 16)
     public int chunkDistance = 16;
 
-    @Config.Numbers.Whole.Bounds(min = 0, max = 8)
-    public int instantRenderDistance = 3;
-
     @Config.Numbers.Whole.Bounds(min = 1, max = 100)
     public int dataLimit = 100;
 

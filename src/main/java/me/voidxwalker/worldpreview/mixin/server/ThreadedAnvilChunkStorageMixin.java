@@ -13,12 +13,7 @@ import me.voidxwalker.worldpreview.WorldPreviewProperties;
 import me.voidxwalker.worldpreview.interfaces.WPChunkHolder;
 import me.voidxwalker.worldpreview.interfaces.WPThreadedAnvilChunkStorage;
 import me.voidxwalker.worldpreview.mixin.access.ThreadedAnvilChunkStorage$EntityTrackerAccessor;
-import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.network.ClientPlayerEntity;
-import net.minecraft.client.render.Camera;
-import net.minecraft.client.render.Frustum;
-import net.minecraft.client.util.math.Matrix4f;
-import net.minecraft.client.util.math.Vector3f;
 import net.minecraft.entity.Entity;
 import net.minecraft.network.Packet;
 import net.minecraft.network.packet.s2c.play.ChunkDataS2CPacket;
@@ -29,7 +24,8 @@ import net.minecraft.server.world.ChunkHolder;
 import net.minecraft.server.world.ServerWorld;
 import net.minecraft.server.world.ThreadedAnvilChunkStorage;
 import net.minecraft.util.TypeFilterableList;
-import net.minecraft.util.math.*;
+import net.minecraft.util.math.ChunkPos;
+import net.minecraft.util.math.MathHelper;
 import net.minecraft.world.chunk.Chunk;
 import net.minecraft.world.chunk.ChunkStatus;
 import net.minecraft.world.chunk.WorldChunk;
@@ -62,24 +58,7 @@ public abstract class ThreadedAnvilChunkStorageMixin implements WPThreadedAnvilC
     @Unique
     private final LongSet sentEmptyChunks = new LongOpenHashSet();
     @Unique
-    private final LongSet culledChunks = new LongOpenHashSet();
-    @Unique
     private final IntSet sentEntities = new IntOpenHashSet();
-    @Unique
-    private final IntSet culledEntities = new IntOpenHashSet();
-
-    @Unique
-    private Frustum frustum;
-    @Unique
-    private Vec3d cameraPos;
-    @Unique
-    private float pitch;
-    @Unique
-    private float yaw;
-    @Unique
-    private double fov;
-    @Unique
-    private double aspectRatio;
 
     @ModifyReturnValue(
             method = "method_17227",
@@ -97,54 +76,10 @@ public abstract class ThreadedAnvilChunkStorageMixin implements WPThreadedAnvilC
     }
 
     @Unique
-    private void updateFrustum(ClientPlayerEntity player, Camera camera) {
-        MinecraftClient client = MinecraftClient.getInstance();
-        double fov = Math.min(client.options.fov * Math.min(Math.max(player.getSpeed(), 0.1f), 1.5f), 180.0);
-        double aspectRatio = (double) client.getWindow().getFramebufferWidth() / client.getWindow().getFramebufferHeight();
-        Vec3d cameraPos;
-        float pitch;
-        float yaw;
-        synchronized (camera) {
-            cameraPos = camera.getPos();
-            pitch = camera.getPitch();
-            yaw = camera.getYaw();
-        }
-        if (this.frustum == null || !cameraPos.equals(this.cameraPos) || this.yaw != yaw || this.pitch != pitch || this.fov != fov || this.aspectRatio != aspectRatio) {
-            // see GameRenderer#renderWorld
-            Matrix4f rotationMatrix = new Matrix4f();
-            rotationMatrix.loadIdentity();
-            rotationMatrix.multiply(Vector3f.POSITIVE_X.getDegreesQuaternion(pitch));
-            rotationMatrix.multiply(Vector3f.POSITIVE_Y.getDegreesQuaternion(yaw + 180.0f));
-
-            // see GameRenderer#getBasicProjectionMatrix
-            Matrix4f projectionMatrix = new Matrix4f();
-            projectionMatrix.loadIdentity();
-            projectionMatrix.multiply(Matrix4f.viewboxMatrix(fov, (float) aspectRatio, 0.05f, 32 * 16 * 4.0f));
-
-            this.frustum = new Frustum(rotationMatrix, projectionMatrix);
-            this.frustum.setPosition(cameraPos.getX(), cameraPos.getY(), cameraPos.getZ());
-            this.cameraPos = cameraPos;
-            this.yaw = yaw;
-            this.pitch = pitch;
-            this.fov = fov;
-            this.aspectRatio = aspectRatio;
-
-            this.culledChunks.clear();
-            this.sentEmptyChunks.clear();
-            this.culledEntities.clear();
-        }
-    }
-
-    @Unique
     private List<Packet<?>> processChunk(WorldChunk chunk) {
         ChunkPos pos = chunk.getPos();
-        if (this.sentChunks.contains(pos.toLong()) || this.culledChunks.contains(pos.toLong())) {
+        if (this.sentChunks.contains(pos.toLong())) {
             return Collections.emptyList();
-        }
-
-        if (this.shouldCullChunk(chunk)) {
-            this.culledChunks.add(pos.toLong());
-            return this.processCulledChunk(chunk, pos);
         }
 
         ChunkHolder holder = this.chunkHolders.get(pos.toLong());
@@ -159,25 +94,6 @@ public abstract class ThreadedAnvilChunkStorageMixin implements WPThreadedAnvilC
         this.sentChunks.add(pos.toLong());
 
         return chunkPackets;
-    }
-
-    @Unique
-    private List<Packet<?>> processCulledChunk(WorldChunk chunk, ChunkPos pos) {
-        if (this.sentEmptyChunks.contains(pos.toLong())) {
-            return Collections.emptyList();
-        }
-        for (int x = -1; x <= 1; x++) {
-            for (int z = -1; z <= 1; z++) {
-                if (x == 0 && z == 0) {
-                    continue;
-                }
-                if (this.sentChunks.contains(ChunkPos.toLong(pos.x + x, pos.z + z))) {
-                    this.sentEmptyChunks.add(pos.toLong());
-                    return Collections.singletonList(this.createEmptyChunkPacket(chunk));
-                }
-            }
-        }
-        return Collections.emptyList();
     }
 
     @Unique
@@ -203,9 +119,6 @@ public abstract class ThreadedAnvilChunkStorageMixin implements WPThreadedAnvilC
                     if (lightUpdates[0] != 0 || lightUpdates[1] != 0) {
                         packets.add(new LightUpdateS2CPacket(new ChunkPos(neighbor), neighborChunk.getLightingProvider(), lightUpdates[0], lightUpdates[1]));
                     }
-                } else if (this.culledChunks.contains(neighbor) && !this.sentEmptyChunks.contains(neighbor)) {
-                    packets.add(this.createEmptyChunkPacket(neighborChunk));
-                    this.sentEmptyChunks.add(neighbor);
                 }
             }
         }
@@ -215,7 +128,8 @@ public abstract class ThreadedAnvilChunkStorageMixin implements WPThreadedAnvilC
     @Unique
     private void sendData(Queue<Packet<?>> packetQueue, ClientPlayerEntity player, WorldChunk chunk) {
         ChunkPos pos = chunk.getPos();
-        if (pos.method_24022(new ChunkPos(player.getBlockPos())) > WorldPreview.config.chunkDistance) {
+        ChunkPos playerPos = new ChunkPos(player.getBlockPos());
+        if (Math.max(Math.abs(pos.x - playerPos.x), Math.abs(pos.z - playerPos.z)) > WorldPreview.config.chunkDistance) {
             return;
         }
 
@@ -239,20 +153,9 @@ public abstract class ThreadedAnvilChunkStorageMixin implements WPThreadedAnvilC
     }
 
     @Unique
-    private boolean shouldCullChunk(WorldChunk chunk) {
-        ChunkPos pos = chunk.getPos();
-        return !this.frustum.isVisible(new Box(pos.getStartX(), 0, pos.getStartZ(), pos.getStartX() + 16, chunk.getHighestNonEmptySectionYOffset() + 16, pos.getStartZ() + 16));
-    }
-
-    @Unique
     private List<Packet<?>> processEntity(Entity entity) {
         int id = entity.getEntityId();
-        if (this.sentEntities.contains(id) || this.culledEntities.contains(id)) {
-            return Collections.emptyList();
-        }
-
-        if (this.shouldCullEntity(entity)) {
-            this.culledEntities.add(entity.getEntityId());
+        if (this.sentEntities.contains(id)) {
             return Collections.emptyList();
         }
 
@@ -275,12 +178,6 @@ public abstract class ThreadedAnvilChunkStorageMixin implements WPThreadedAnvilC
 
         this.sentEntities.add(id);
         return entityPackets;
-    }
-
-    @Unique
-    private boolean shouldCullEntity(Entity entity) {
-        // Do not try to cull entities that are vehicles or passengers, supporting that would cause unnecessary complexity
-        return !entity.hasVehicle() && !entity.hasPassengers() && !entity.ignoreCameraFrustum && !this.frustum.isVisible(entity.getVisibilityBoundingBox());
     }
 
     @Unique
@@ -315,8 +212,6 @@ public abstract class ThreadedAnvilChunkStorageMixin implements WPThreadedAnvilC
         if (!this.world.getDimension().getType().equals(properties.world.getDimension().getType())) {
             return;
         }
-
-        this.updateFrustum(properties.player, properties.camera);
 
         for (ChunkHolder holder : this.chunkHolders.values()) {
             Either<Chunk, ChunkHolder.Unloaded> either = holder.getFuture(ChunkStatus.FULL).getNow(null);

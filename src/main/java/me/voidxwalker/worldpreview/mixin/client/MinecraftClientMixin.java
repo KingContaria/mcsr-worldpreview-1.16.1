@@ -1,7 +1,6 @@
 package me.voidxwalker.worldpreview.mixin.client;
 
 import com.llamalad7.mixinextras.injector.ModifyExpressionValue;
-import com.llamalad7.mixinextras.injector.ModifyReturnValue;
 import com.llamalad7.mixinextras.injector.v2.WrapWithCondition;
 import me.voidxwalker.worldpreview.WorldPreview;
 import me.voidxwalker.worldpreview.compat.StateOutputCompat;
@@ -11,7 +10,6 @@ import net.minecraft.client.gui.screen.LevelLoadingScreen;
 import net.minecraft.client.gui.screen.ProgressScreen;
 import net.minecraft.client.gui.screen.Screen;
 import net.minecraft.client.gui.screen.TitleScreen;
-import net.minecraft.client.render.BufferBuilderStorage;
 import net.minecraft.client.render.WorldRenderer;
 import net.minecraft.client.world.ClientWorld;
 import net.minecraft.server.integrated.IntegratedServer;
@@ -85,28 +83,28 @@ public abstract class MinecraftClientMixin {
     }
 
     @Inject(
-            method = "<init>",
+            method = "init",
             at = @At(
                     value = "INVOKE",
-                    target = "Lnet/minecraft/client/render/WorldRenderer;<init>(Lnet/minecraft/client/MinecraftClient;Lnet/minecraft/client/render/BufferBuilderStorage;)V",
+                    target = "Lnet/minecraft/client/render/WorldRenderer;<init>(Lnet/minecraft/client/MinecraftClient;)V",
                     shift = At.Shift.AFTER
             )
     )
     private void createWorldPreviewRenderer(CallbackInfo ci) {
-        WorldPreview.worldRenderer = new WorldRenderer(MinecraftClient.getInstance(), new BufferBuilderStorage());
+        WorldPreview.worldRenderer = new WorldRenderer(MinecraftClient.getInstance());
     }
 
     @Inject(
             method = "render",
             at = @At(
                     value = "INVOKE",
-                    target = "Lnet/minecraft/client/util/Window;swapBuffers()V",
+                    target = "Lnet/minecraft/client/MinecraftClient;updateDisplay(Z)V",
                     shift = At.Shift.AFTER
             )
     )
     private void logWorldPreviewStart(CallbackInfo ci) {
         if (WorldPreview.shouldLogPreviewStart()) {
-            WorldPreview.LOGGER.info("Starting Preview at ({}, {}, {})", WorldPreview.properties.player.getX(), WorldPreview.properties.player.getY(), WorldPreview.properties.player.getZ());
+            WorldPreview.LOGGER.info("Starting Preview at ({}, {}, {})", WorldPreview.properties.player.x, WorldPreview.properties.player.y, WorldPreview.properties.player.z);
             if (WorldPreview.HAS_STATEOUTPUT) {
                 StateOutputCompat.outputPreviewing();
             }

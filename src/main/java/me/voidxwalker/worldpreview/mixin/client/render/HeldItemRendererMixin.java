@@ -13,7 +13,7 @@ public abstract class HeldItemRendererMixin {
 
     @ModifyExpressionValue(
             method = {
-                    "renderItem(FLnet/minecraft/client/util/math/MatrixStack;Lnet/minecraft/client/render/VertexConsumerProvider$Immediate;Lnet/minecraft/client/network/ClientPlayerEntity;I)V",
+                    "renderFirstPersonItem(F)V",
                     "renderMapInBothHands"
             },
             at = @At(
@@ -31,7 +31,7 @@ public abstract class HeldItemRendererMixin {
     }
 
     @ModifyExpressionValue(
-            method = "renderItem(FLnet/minecraft/client/util/math/MatrixStack;Lnet/minecraft/client/render/VertexConsumerProvider$Immediate;Lnet/minecraft/client/network/ClientPlayerEntity;I)V",
+            method = "renderFirstPersonItem(F)V",
             at = @At(
                     value = "FIELD",
                     target = "Lnet/minecraft/client/render/item/HeldItemRenderer;offHand:Lnet/minecraft/item/ItemStack;",
@@ -46,7 +46,7 @@ public abstract class HeldItemRendererMixin {
     }
 
     @ModifyExpressionValue(
-            method = "renderItem(FLnet/minecraft/client/util/math/MatrixStack;Lnet/minecraft/client/render/VertexConsumerProvider$Immediate;Lnet/minecraft/client/network/ClientPlayerEntity;I)V",
+            method = "renderFirstPersonItem(F)V",
             at = {
                     @At(
                             value = "FIELD",

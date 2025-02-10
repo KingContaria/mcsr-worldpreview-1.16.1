@@ -93,7 +93,7 @@ public abstract class LevelLoadingScreenMixin extends Screen {
         }
         if (keyCode == GLFW.GLFW_KEY_ESCAPE) {
             if (this.showMenu) {
-                if (InputUtil.isKeyPressed(MinecraftClient.getInstance().getWindow().getHandle(), GLFW.GLFW_KEY_F3)) {
+                if (InputUtil.isKeyPressed(MinecraftClient.getInstance().window.getHandle(), GLFW.GLFW_KEY_F3)) {
                     this.showMenu = false;
                 }
             } else {

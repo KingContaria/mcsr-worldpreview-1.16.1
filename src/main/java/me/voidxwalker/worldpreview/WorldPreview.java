@@ -180,27 +180,22 @@ public class WorldPreview {
         player.getDataTracker().set(PlayerEntityAccessor.worldpreview$getPLAYER_MODEL_PARTS(), (byte) playerModelPartsBitMask);
 
         // set cape to player position
-        player.field_7524 = player.field_7500 = player.getX();
-        player.field_7502 = player.field_7521 = player.getY();
-        player.field_7522 = player.field_7499 = player.getZ();
+        player.field_7524 = player.field_7500 = player.x;
+        player.field_7502 = player.field_7521 = player.y;
+        player.field_7522 = player.field_7499 = player.z;
 
         world.addPlayer(player.getEntityId(), player);
 
         // set player chunk coordinates,
         // usually these get set when adding the entity to a chunk,
         // however the chunk the player is in is not actually loaded yet
-        player.chunkX = MathHelper.floor(player.getX() / 16.0);
-        player.chunkY = MathHelper.clamp(MathHelper.floor(player.getY() / 16.0), 0, 16);
-        player.chunkZ = MathHelper.floor(player.getZ() / 16.0);
+        player.chunkX = MathHelper.floor(player.x / 16.0);
+        player.chunkY = MathHelper.clamp(MathHelper.floor(player.y / 16.0), 0, 16);
+        player.chunkZ = MathHelper.floor(player.z / 16.0);
 
         world.getChunkManager().setChunkMapCenter(player.chunkX, player.chunkZ);
 
         ((ClientPlayNetworkHandlerAccessor) player.networkHandler).worldpreview$setWorld(world);
-
-        // camera has to be updated early for chunk/entity data culling to work
-        // we pass the fake player, so we know the call comes from here in CameraMixin#modifyCameraY
-        int perspective = MinecraftClient.getInstance().options.perspective;
-        camera.update(world, fakePlayer, perspective > 0, perspective == 2, 1.0f);
 
         set(world, player, interactionManager, camera, packetQueue);
     }

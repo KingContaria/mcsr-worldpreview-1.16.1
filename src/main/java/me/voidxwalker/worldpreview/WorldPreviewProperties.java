@@ -1,6 +1,6 @@
 package me.voidxwalker.worldpreview;
 
-import com.mojang.blaze3d.systems.RenderSystem;
+import com.mojang.blaze3d.platform.GlStateManager;
 import me.voidxwalker.worldpreview.mixin.access.EntityAccessor;
 import me.voidxwalker.worldpreview.mixin.access.GameRendererAccessor;
 import me.voidxwalker.worldpreview.mixin.access.MinecraftClientAccessor;
@@ -11,11 +11,9 @@ import net.minecraft.client.gui.widget.ButtonWidget;
 import net.minecraft.client.network.ClientPlayerEntity;
 import net.minecraft.client.network.ClientPlayerInteractionManager;
 import net.minecraft.client.render.Camera;
-import net.minecraft.client.render.DiffuseLighting;
 import net.minecraft.client.render.WorldRenderer;
 import net.minecraft.client.resource.language.I18n;
 import net.minecraft.client.util.Window;
-import net.minecraft.client.util.math.MatrixStack;
 import net.minecraft.client.world.ClientWorld;
 import net.minecraft.entity.Entity;
 import net.minecraft.network.Packet;
@@ -23,7 +21,6 @@ import net.minecraft.network.listener.ClientPlayPacketListener;
 import net.minecraft.network.packet.s2c.play.ChunkDataS2CPacket;
 import net.minecraft.network.packet.s2c.play.EntitySpawnS2CPacket;
 import net.minecraft.network.packet.s2c.play.MobSpawnS2CPacket;
-import net.minecraft.util.Util;
 import net.minecraft.util.profiler.Profiler;
 import net.minecraft.util.registry.Registry;
 
@@ -34,7 +31,8 @@ import java.util.Queue;
 import java.util.function.Consumer;
 
 public class WorldPreviewProperties extends DrawableHelper {
-    private static final ButtonWidget.PressAction NO_OP = button -> {};
+    private static final ButtonWidget.PressAction NO_OP = button -> {
+    };
 
     public final ClientWorld world;
     public final ClientPlayerEntity player;
@@ -162,7 +160,7 @@ public class WorldPreviewProperties extends DrawableHelper {
         if (entity.getVehicle() != null) {
             entity.getVehicle().updatePassengerPosition(entity);
             entity.calculateDimensions();
-            entity.updatePositionAndAngles(entity.getX(), entity.getY(), entity.getZ(), entity.yaw, entity.pitch);
+            entity.updatePositionAndAngles(entity.x, entity.y, entity.z, entity.yaw, entity.pitch);
         }
         entity.baseTick();
 
@@ -172,48 +170,42 @@ public class WorldPreviewProperties extends DrawableHelper {
     public void renderWorld() {
         MinecraftClient client = MinecraftClient.getInstance();
         Profiler profiler = client.getProfiler();
-        Window window = client.getWindow();
+        Window window = client.window;
 
         profiler.swap("render_preview");
 
-        RenderSystem.clear(256, MinecraftClient.IS_SYSTEM_MAC);
-        RenderSystem.loadIdentity();
-        RenderSystem.ortho(0.0, window.getFramebufferWidth(), window.getFramebufferHeight(), 0.0, 1000.0, 3000.0);
-        RenderSystem.loadIdentity();
-        RenderSystem.translatef(0.0F, 0.0F, 0.0F);
-        DiffuseLighting.disableGuiDepthLighting();
+        GlStateManager.clear(256, MinecraftClient.IS_SYSTEM_MAC);
+        GlStateManager.loadIdentity();
+        GlStateManager.ortho(0.0, window.getFramebufferWidth(), window.getFramebufferHeight(), 0.0, 1000.0, 3000.0);
+        GlStateManager.loadIdentity();
+        GlStateManager.translatef(0.0F, 0.0F, 0.0F);
 
         profiler.push("light_map");
-        client.gameRenderer.getLightmapTextureManager().tick();
+        //noinspection resource
+        ((GameRendererAccessor) client.gameRenderer).worldpreview$getLightmapTextureManager().tick();
         profiler.swap("render_world");
-        client.gameRenderer.renderWorld(0.0F, Util.getMeasuringTimeNano(), new MatrixStack());
+        client.gameRenderer.renderWorld(0.0F, Long.MAX_VALUE);
         profiler.swap("entity_outlines");
         client.worldRenderer.drawEntityOutlinesFramebuffer();
         profiler.pop();
 
-        RenderSystem.clear(256, MinecraftClient.IS_SYSTEM_MAC);
+        GlStateManager.clear(256, MinecraftClient.IS_SYSTEM_MAC);
     }
 
     public void renderHud() {
         MinecraftClient client = MinecraftClient.getInstance();
         Profiler profiler = client.getProfiler();
-        Window window = client.getWindow();
+        Window window = client.window;
 
-        RenderSystem.clear(256, MinecraftClient.IS_SYSTEM_MAC);
-        RenderSystem.matrixMode(5889);
-        RenderSystem.loadIdentity();
-        RenderSystem.ortho(0.0D, (double) window.getFramebufferWidth() / window.getScaleFactor(), (double) window.getFramebufferHeight() / window.getScaleFactor(), 0.0D, 1000.0D, 3000.0D);
-        RenderSystem.matrixMode(5888);
-        RenderSystem.loadIdentity();
-        RenderSystem.translatef(0.0F, 0.0F, -2000.0F);
-        DiffuseLighting.enableGuiDepthLighting();
-        RenderSystem.defaultAlphaFunc();
+        GlStateManager.clear(256, MinecraftClient.IS_SYSTEM_MAC);
+        GlStateManager.alphaFunc(516, 0.1f);
+        window.method_4493(MinecraftClient.IS_SYSTEM_MAC);
 
         profiler.push("ingame_hud");
         client.inGameHud.render(0.0F);
         profiler.pop();
 
-        RenderSystem.clear(256, MinecraftClient.IS_SYSTEM_MAC);
+        GlStateManager.clear(256, MinecraftClient.IS_SYSTEM_MAC);
     }
 
     public void renderMenu(int mouseX, int mouseY, float delta, List<ButtonWidget> buttons, int width, int height, boolean showMenu) {
