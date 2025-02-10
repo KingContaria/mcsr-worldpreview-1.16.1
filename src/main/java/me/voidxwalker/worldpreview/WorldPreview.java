@@ -13,6 +13,7 @@ import net.minecraft.client.render.WorldRenderer;
 import net.minecraft.client.render.entity.PlayerModelPart;
 import net.minecraft.client.world.ClientWorld;
 import net.minecraft.entity.EntityType;
+import net.minecraft.entity.attribute.EntityAttributes;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.ListTag;
 import net.minecraft.network.Packet;
@@ -23,8 +24,10 @@ import net.minecraft.scoreboard.Team;
 import net.minecraft.server.network.ServerPlayerInteractionManager;
 import net.minecraft.server.world.ServerWorld;
 import net.minecraft.util.math.MathHelper;
+import net.minecraft.util.profiler.DummyProfiler;
 import net.minecraft.world.GameMode;
 import net.minecraft.world.GameRules;
+import net.minecraft.world.level.LevelInfo;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -54,13 +57,11 @@ public class WorldPreview {
         WorldPreview.properties = new WorldPreviewProperties(world, player, interactionManager, camera, packetQueue);
     }
 
-    public static boolean configure(ServerWorld serverWorld) {
+    public static void configure(ServerWorld serverWorld) {
         WPFakeServerPlayerEntity fakePlayer;
         try {
             CALCULATING_SPAWN.set(true);
             fakePlayer = new WPFakeServerPlayerEntity(serverWorld.getServer(), serverWorld, MinecraftClient.getInstance().getSession().getProfile(), new ServerPlayerInteractionManager(serverWorld));
-        } catch (WorldPreviewMissingChunkException e) {
-            return false;
         } finally {
             CALCULATING_SPAWN.remove();
         }
@@ -78,17 +79,13 @@ public class WorldPreview {
 
         ClientWorld world = new ClientWorld(
                 networkHandler,
-                new ClientWorld.Properties(serverWorld.getDifficulty(), serverWorld.getServer().isHardcore(), serverWorld.isFlat()),
-                serverWorld.getRegistryKey(),
-                serverWorld.getDimensionRegistryKey(),
-                serverWorld.getDimension(),
+                new LevelInfo(serverWorld.getLevelProperties()),
+                serverWorld.getDimension().getType(),
                 // WorldPreviews Chunk Distance is one lower than Minecraft's chunkLoadDistance,
                 // when it's at 1 only the chunk the player is in gets sent
                 config.chunkDistance - 1,
-                MinecraftClient.getInstance()::getProfiler,
-                WorldPreview.worldRenderer,
-                serverWorld.isDebugWorld(),
-                serverWorld.getSeed()
+                DummyProfiler.INSTANCE,
+                WorldPreview.worldRenderer
         );
         ClientPlayerEntity player = interactionManager.createPlayer(
                 world,
@@ -115,7 +112,7 @@ public class WorldPreview {
         // This part is not actually relevant for previewing new worlds,
         // I just personally like the idea of worldpreview principally being able to work on old worlds as well
         // same with sending world info and scoreboard data
-        CompoundTag playerData = serverWorld.getServer().getSaveProperties().getPlayerData();
+        CompoundTag playerData = serverWorld.getServer().getPlayerManager().getUserData();
         if (playerData != null) {
             player.fromTag(playerData);
 
@@ -126,7 +123,7 @@ public class WorldPreview {
 
             // see LivingEntity#readCustomDataFromTag, only gets read on server worlds
             if (playerData.contains("Attributes", 9)) {
-                player.getAttributes().fromTag(playerData.getList("Attributes", 10));
+                EntityAttributes.fromTag(player.getAttributes(), playerData.getList("Attributes", 10));
             }
 
             // see PlayerManager#onPlayerConnect
@@ -148,16 +145,16 @@ public class WorldPreview {
 
         Queue<Packet<?>> packetQueue = new LinkedBlockingQueue<>();
         packetQueue.add(new PlayerListS2CPacket(PlayerListS2CPacket.Action.ADD_PLAYER, fakePlayer));
-        packetQueue.add(new GameStateChangeS2CPacket(GameStateChangeS2CPacket.GAME_MODE_CHANGED, (gameMode != GameMode.NOT_SET ? gameMode : serverWorld.getServer().getDefaultGameMode()).getId()));
+        packetQueue.add(new GameStateChangeS2CPacket(3, (gameMode != GameMode.NOT_SET ? gameMode : serverWorld.getServer().getDefaultGameMode()).getId()));
 
         // see PlayerManager#sendWorldInfo
         packetQueue.add(new WorldBorderS2CPacket(serverWorld.getWorldBorder(), WorldBorderS2CPacket.Type.INITIALIZE));
         packetQueue.add(new WorldTimeUpdateS2CPacket(serverWorld.getTime(), serverWorld.getTimeOfDay(), serverWorld.getGameRules().getBoolean(GameRules.DO_DAYLIGHT_CYCLE)));
         packetQueue.add(new PlayerSpawnPositionS2CPacket(serverWorld.getSpawnPos()));
         if (serverWorld.isRaining()) {
-            packetQueue.add(new GameStateChangeS2CPacket(GameStateChangeS2CPacket.RAIN_STARTED, 0.0f));
-            packetQueue.add(new GameStateChangeS2CPacket(GameStateChangeS2CPacket.RAIN_GRADIENT_CHANGED, serverWorld.getRainGradient(1.0f)));
-            packetQueue.add(new GameStateChangeS2CPacket(GameStateChangeS2CPacket.THUNDER_GRADIENT_CHANGED, serverWorld.getThunderGradient(1.0f)));
+            packetQueue.add(new GameStateChangeS2CPacket(1, 0.0F));
+            packetQueue.add(new GameStateChangeS2CPacket(7, world.getRainGradient(1.0F)));
+            packetQueue.add(new GameStateChangeS2CPacket(8, world.getThunderGradient(1.0F)));
         }
 
         // see PlayerManager#sendScoreboard
@@ -183,9 +180,9 @@ public class WorldPreview {
         player.getDataTracker().set(PlayerEntityAccessor.worldpreview$getPLAYER_MODEL_PARTS(), (byte) playerModelPartsBitMask);
 
         // set cape to player position
-        player.prevCapeX = player.capeX = player.getX();
-        player.prevCapeY = player.capeY = player.getY();
-        player.prevCapeZ = player.capeZ = player.getZ();
+        player.field_7524 = player.field_7500 = player.getX();
+        player.field_7502 = player.field_7521 = player.getY();
+        player.field_7522 = player.field_7499 = player.getZ();
 
         world.addPlayer(player.getEntityId(), player);
 
@@ -206,7 +203,6 @@ public class WorldPreview {
         camera.update(world, fakePlayer, perspective > 0, perspective == 2, 1.0f);
 
         set(world, player, interactionManager, camera, packetQueue);
-        return true;
     }
 
     public static void clear() {

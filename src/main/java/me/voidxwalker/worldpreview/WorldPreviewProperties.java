@@ -1,7 +1,6 @@
 package me.voidxwalker.worldpreview;
 
 import com.mojang.blaze3d.systems.RenderSystem;
-import me.contaria.speedrunapi.util.TextUtil;
 import me.voidxwalker.worldpreview.mixin.access.EntityAccessor;
 import me.voidxwalker.worldpreview.mixin.access.GameRendererAccessor;
 import me.voidxwalker.worldpreview.mixin.access.MinecraftClientAccessor;
@@ -14,6 +13,7 @@ import net.minecraft.client.network.ClientPlayerInteractionManager;
 import net.minecraft.client.render.Camera;
 import net.minecraft.client.render.DiffuseLighting;
 import net.minecraft.client.render.WorldRenderer;
+import net.minecraft.client.resource.language.I18n;
 import net.minecraft.client.util.Window;
 import net.minecraft.client.util.math.MatrixStack;
 import net.minecraft.client.world.ClientWorld;
@@ -101,12 +101,12 @@ public class WorldPreviewProperties extends DrawableHelper {
         }
     }
 
-    public void render(MatrixStack matrices, int mouseX, int mouseY, float delta, List<ButtonWidget> buttons, int width, int height, boolean showMenu) {
+    public void render(int mouseX, int mouseY, float delta, List<ButtonWidget> buttons, int width, int height, boolean showMenu) {
         this.tickPackets();
         this.tickEntities();
         this.renderWorld();
-        this.renderHud(matrices);
-        this.renderMenu(matrices, mouseX, mouseY, delta, buttons, width, height, showMenu);
+        this.renderHud();
+        this.renderMenu(mouseX, mouseY, delta, buttons, width, height, showMenu);
     }
 
     public void tickPackets() {
@@ -169,7 +169,6 @@ public class WorldPreviewProperties extends DrawableHelper {
         profiler.pop();
     }
 
-    @SuppressWarnings("deprecation")
     public void renderWorld() {
         MinecraftClient client = MinecraftClient.getInstance();
         Profiler profiler = client.getProfiler();
@@ -195,8 +194,7 @@ public class WorldPreviewProperties extends DrawableHelper {
         RenderSystem.clear(256, MinecraftClient.IS_SYSTEM_MAC);
     }
 
-    @SuppressWarnings("deprecation")
-    public void renderHud(MatrixStack matrices) {
+    public void renderHud() {
         MinecraftClient client = MinecraftClient.getInstance();
         Profiler profiler = client.getProfiler();
         Window window = client.getWindow();
@@ -212,33 +210,33 @@ public class WorldPreviewProperties extends DrawableHelper {
         RenderSystem.defaultAlphaFunc();
 
         profiler.push("ingame_hud");
-        client.inGameHud.render(matrices, 0.0F);
+        client.inGameHud.render(0.0F);
         profiler.pop();
 
         RenderSystem.clear(256, MinecraftClient.IS_SYSTEM_MAC);
     }
 
-    public void renderMenu(MatrixStack matrices, int mouseX, int mouseY, float delta, List<ButtonWidget> buttons, int width, int height, boolean showMenu) {
+    public void renderMenu(int mouseX, int mouseY, float delta, List<ButtonWidget> buttons, int width, int height, boolean showMenu) {
         if (showMenu) {
-            this.fillGradient(matrices, 0, 0, width, height + 1, -1072689136, -804253680);
+            this.fillGradient(0, 0, width, height + 1, -1072689136, -804253680);
             for (ButtonWidget button : buttons) {
-                button.render(matrices, mouseX, mouseY, delta);
+                button.render(mouseX, mouseY, delta);
             }
         } else {
-            this.drawCenteredText(matrices, MinecraftClient.getInstance().textRenderer, TextUtil.translatable("menu.paused"), width / 2, 10, 16777215);
+            this.drawCenteredString(MinecraftClient.getInstance().textRenderer, I18n.translate("menu.paused"), width / 2, 10, 16777215);
         }
     }
 
     public static List<ButtonWidget> createMenu(int width, int height, Runnable returnToGame, Runnable kill) {
         List<ButtonWidget> buttons = new ArrayList<>();
-        buttons.add(new ButtonWidget(width / 2 - 102, height / 4 + 24 - 16, 204, 20, TextUtil.translatable("menu.returnToGame"), button -> returnToGame.run()));
-        buttons.add(new ButtonWidget(width / 2 - 102, height / 4 + 48 - 16, 98, 20, TextUtil.translatable("gui.advancements"), NO_OP));
-        buttons.add(new ButtonWidget(width / 2 + 4, height / 4 + 48 - 16, 98, 20, TextUtil.translatable("gui.stats"), NO_OP));
-        buttons.add(new ButtonWidget(width / 2 - 102, height / 4 + 72 - 16, 98, 20, TextUtil.translatable("menu.sendFeedback"), NO_OP));
-        buttons.add(new ButtonWidget(width / 2 + 4, height / 4 + 72 - 16, 98, 20, TextUtil.translatable("menu.reportBugs"), NO_OP));
-        buttons.add(new ButtonWidget(width / 2 - 102, height / 4 + 96 - 16, 98, 20, TextUtil.translatable("menu.options"), NO_OP));
-        buttons.add(new ButtonWidget(width / 2 + 4, height / 4 + 96 - 16, 98, 20, TextUtil.translatable("menu.shareToLan"), NO_OP));
-        buttons.add(new ButtonWidget(width / 2 - 102, height / 4 + 120 - 16, 204, 20, TextUtil.translatable("menu.returnToMenu"), button -> {
+        buttons.add(new ButtonWidget(width / 2 - 102, height / 4 + 24 - 16, 204, 20, I18n.translate("menu.returnToGame"), button -> returnToGame.run()));
+        buttons.add(new ButtonWidget(width / 2 - 102, height / 4 + 48 - 16, 98, 20, I18n.translate("gui.advancements"), NO_OP));
+        buttons.add(new ButtonWidget(width / 2 + 4, height / 4 + 48 - 16, 98, 20, I18n.translate("gui.stats"), NO_OP));
+        buttons.add(new ButtonWidget(width / 2 - 102, height / 4 + 72 - 16, 98, 20, I18n.translate("menu.sendFeedback"), NO_OP));
+        buttons.add(new ButtonWidget(width / 2 + 4, height / 4 + 72 - 16, 98, 20, I18n.translate("menu.reportBugs"), NO_OP));
+        buttons.add(new ButtonWidget(width / 2 - 102, height / 4 + 96 - 16, 98, 20, I18n.translate("menu.options"), NO_OP));
+        buttons.add(new ButtonWidget(width / 2 + 4, height / 4 + 96 - 16, 98, 20, I18n.translate("menu.shareToLan"), NO_OP));
+        buttons.add(new ButtonWidget(width / 2 - 102, height / 4 + 120 - 16, 204, 20, I18n.translate("menu.returnToMenu"), button -> {
             kill.run();
             button.active = false;
         }));

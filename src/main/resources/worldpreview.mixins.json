@@ -22,7 +22,6 @@
     "client.render.WorldRendererMixin",
     "compat.sodium.ChunkRenderContainerMixin",
     "parity.EntityMixin",
-    "parity.SpawnLocatingMixin",
     "server.ChunkHolderMixin",
     "server.IntegratedServerMixin",
     "server.MinecraftServerMixin",

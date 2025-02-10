@@ -42,7 +42,7 @@ public abstract class MinecraftServerMixin implements WPMinecraftServer {
             method = "createWorlds",
             at = @At(
                     value = "INVOKE",
-                    target = "Lnet/minecraft/world/level/ServerWorldProperties;isInitialized()Z"
+                    target = "Lnet/minecraft/world/level/LevelProperties;isInitialized()Z"
             )
     )
     private boolean setShouldConfigurePreview(boolean isInitialized) {
@@ -59,10 +59,9 @@ public abstract class MinecraftServerMixin implements WPMinecraftServer {
     )
     private ServerWorld configureWorldPreview(ServerWorld serverWorld) {
         if (this.shouldConfigurePreview && !this.killed) {
-            if (WorldPreview.configure(serverWorld)) {
-                this.shouldConfigurePreview = false;
-                ((WPThreadedAnvilChunkStorage) serverWorld.getChunkManager().threadedAnvilChunkStorage).worldpreview$sendData();
-            }
+            WorldPreview.configure(serverWorld);
+            this.shouldConfigurePreview = false;
+            ((WPThreadedAnvilChunkStorage) serverWorld.getChunkManager().threadedAnvilChunkStorage).worldpreview$sendData();
         }
         return serverWorld;
     }
@@ -105,7 +104,7 @@ public abstract class MinecraftServerMixin implements WPMinecraftServer {
     }
 
     @ModifyExpressionValue(
-            method = "runServer",
+            method = "run",
             at = @At(
                     value = "INVOKE",
                     target = "Lnet/minecraft/server/MinecraftServer;setupServer()Z"

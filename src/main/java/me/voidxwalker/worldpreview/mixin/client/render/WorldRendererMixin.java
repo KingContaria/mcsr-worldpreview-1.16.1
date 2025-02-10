@@ -47,15 +47,4 @@ public abstract class WorldRendererMixin {
     private boolean fixWorldPreviewChunkRebuilding(Set<ChunkBuilder.BuiltChunk> set, Collection<ChunkBuilder.BuiltChunk> collection) {
         return !WorldPreview.renderingPreview;
     }
-
-    @ModifyExpressionValue(
-            method = "reload",
-            at = @At(
-                    value = "INVOKE",
-                    target = "Lnet/minecraft/client/MinecraftClient;isFabulousGraphicsOrBetter()Z"
-            )
-    )
-    private boolean doNotAllowFabulousGraphicsOnPreview(boolean isFabulousGraphicsOrBetter) {
-        return isFabulousGraphicsOrBetter && (Object) this != WorldPreview.worldRenderer;
-    }
 }

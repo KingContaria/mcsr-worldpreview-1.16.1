@@ -39,7 +39,7 @@ public abstract class MinecraftClientMixin {
     public abstract void openScreen(@Nullable Screen screen);
 
     @Inject(
-            method = "startIntegratedServer(Ljava/lang/String;Lnet/minecraft/util/registry/RegistryTracker$Modifiable;Ljava/util/function/Function;Lcom/mojang/datafixers/util/Function4;ZLnet/minecraft/client/MinecraftClient$WorldLoadAction;)V",
+            method = "startIntegratedServer",
             at = @At(
                     value = "INVOKE",
                     target = "Lnet/minecraft/server/integrated/IntegratedServer;isLoading()Z"
@@ -94,14 +94,6 @@ public abstract class MinecraftClientMixin {
     )
     private void createWorldPreviewRenderer(CallbackInfo ci) {
         WorldPreview.worldRenderer = new WorldRenderer(MinecraftClient.getInstance(), new BufferBuilderStorage());
-    }
-
-    @ModifyReturnValue(
-            method = "isFabulousGraphicsOrBetter",
-            at = @At("RETURN")
-    )
-    private static boolean doNotAllowFabulousGraphicsOnPreview(boolean isFabulousGraphicsOrBetter) {
-        return isFabulousGraphicsOrBetter && !WorldPreview.renderingPreview;
     }
 
     @Inject(
