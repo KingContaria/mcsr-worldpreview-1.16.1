@@ -21,9 +21,7 @@ import net.minecraft.network.packet.s2c.play.*;
 import net.minecraft.scoreboard.ScoreboardObjective;
 import net.minecraft.scoreboard.ServerScoreboard;
 import net.minecraft.scoreboard.Team;
-import net.minecraft.server.network.ServerPlayerInteractionManager;
 import net.minecraft.server.world.ServerWorld;
-import net.minecraft.util.math.MathHelper;
 import net.minecraft.world.GameMode;
 import net.minecraft.world.GameRules;
 import org.apache.logging.log4j.LogManager;
@@ -59,7 +57,7 @@ public class WorldPreview {
         WPFakeServerPlayerEntity fakePlayer;
         try {
             CALCULATING_SPAWN.set(true);
-            fakePlayer = new WPFakeServerPlayerEntity(serverWorld.getServer(), serverWorld, MinecraftClient.getInstance().getSession().getProfile(), new ServerPlayerInteractionManager(serverWorld));
+            fakePlayer = new WPFakeServerPlayerEntity(serverWorld.getServer(), serverWorld, MinecraftClient.getInstance().getSession().getProfile());
         } catch (WorldPreviewMissingChunkException e) {
             return false;
         } finally {
@@ -99,18 +97,19 @@ public class WorldPreview {
         player.copyPositionAndRotation(fakePlayer);
         // avoid the ClientPlayer being removed from previews on id collisions by setting its entityId
         // to the ServerPlayer's as would be done in the ClientPlayNetworkHandler
-        player.setEntityId(fakePlayer.getEntityId());
+        player.setId(fakePlayer.getId());
         // copy the inventory from the server player, for mods like icarus to render given items on preview
-        player.inventory.readNbt(fakePlayer.inventory.writeNbt(new NbtList()));
-        player.inventory.selectedSlot = fakePlayer.inventory.selectedSlot;
+        player.getInventory().readNbt(fakePlayer.getInventory().writeNbt(new NbtList()));
+        player.getInventory().selectedSlot = fakePlayer.getInventory().selectedSlot;
         // reset the randomness introduced to the yaw in LivingEntity#<init>
-        player.headYaw = player.yaw = 0.0F;
+        player.headYaw = 0.0F;
+        player.setYaw(0.0F);
         // the end result of the elytra lerp, is applied at the beginning because
         // otherwise seedqueue would have to take it into account when caching the framebuffer
         player.elytraPitch = (float) (Math.PI / 12);
         player.elytraRoll = (float) (-Math.PI / 12);
 
-        GameMode gameMode = GameMode.NOT_SET;
+        GameMode gameMode = GameMode.DEFAULT;
 
         // This part is not actually relevant for previewing new worlds,
         // I just personally like the idea of worldpreview principally being able to work on old worlds as well
@@ -135,7 +134,7 @@ public class WorldPreview {
                 UUID uUID = vehicleData.containsUuid("Attach") ? vehicleData.getUuid("Attach") : null;
                 EntityType.loadEntityWithPassengers(vehicleData.getCompound("Entity"), serverWorld, entity -> {
                     entity.world = world;
-                    world.addEntity(entity.getEntityId(), entity);
+                    world.addEntity(entity.getId(), entity);
                     if (entity.getUuid().equals(uUID)) {
                         player.startRiding(entity, true);
                     }
@@ -148,10 +147,10 @@ public class WorldPreview {
 
         Queue<Packet<?>> packetQueue = new LinkedBlockingQueue<>();
         packetQueue.add(new PlayerListS2CPacket(PlayerListS2CPacket.Action.ADD_PLAYER, fakePlayer));
-        packetQueue.add(new GameStateChangeS2CPacket(GameStateChangeS2CPacket.GAME_MODE_CHANGED, (gameMode != GameMode.NOT_SET ? gameMode : serverWorld.getServer().getDefaultGameMode()).getId()));
+        packetQueue.add(new GameStateChangeS2CPacket(GameStateChangeS2CPacket.GAME_MODE_CHANGED, (gameMode != GameMode.DEFAULT ? gameMode : serverWorld.getServer().getDefaultGameMode()).getId()));
 
         // see PlayerManager#sendWorldInfo
-        packetQueue.add(new WorldBorderS2CPacket(serverWorld.getWorldBorder(), WorldBorderS2CPacket.Type.INITIALIZE));
+        packetQueue.add(new WorldBorderInitializeS2CPacket(serverWorld.getWorldBorder()));
         packetQueue.add(new WorldTimeUpdateS2CPacket(serverWorld.getTime(), serverWorld.getTimeOfDay(), serverWorld.getGameRules().getBoolean(GameRules.DO_DAYLIGHT_CYCLE)));
         packetQueue.add(new PlayerSpawnPositionS2CPacket(serverWorld.getSpawnPos(), serverWorld.getSpawnAngle()));
         if (serverWorld.isRaining()) {
@@ -164,7 +163,7 @@ public class WorldPreview {
         ServerScoreboard scoreboard = serverWorld.getScoreboard();
         HashSet<ScoreboardObjective> set = Sets.newHashSet();
         for (Team team : scoreboard.getTeams()) {
-            packetQueue.add(new TeamS2CPacket(team, 0));
+            packetQueue.add(TeamS2CPacket.updateTeam(team, true));
         }
         for (int i = 0; i < 19; ++i) {
             ScoreboardObjective scoreboardObjective = scoreboard.getObjectiveForSlot(i);
@@ -177,8 +176,10 @@ public class WorldPreview {
 
         // make player model parts visible
         int playerModelPartsBitMask = 0;
-        for (PlayerModelPart playerModelPart : MinecraftClient.getInstance().options.getEnabledPlayerModelParts()) {
-            playerModelPartsBitMask |= playerModelPart.getBitFlag();
+        for (PlayerModelPart playerModelPart : PlayerModelPart.values()) {
+            if (MinecraftClient.getInstance().options.isPlayerModelPartEnabled(playerModelPart)) {
+                playerModelPartsBitMask |= playerModelPart.getBitFlag();
+            }
         }
         player.getDataTracker().set(PlayerEntityAccessor.worldpreview$getPLAYER_MODEL_PARTS(), (byte) playerModelPartsBitMask);
 
@@ -187,16 +188,8 @@ public class WorldPreview {
         player.prevCapeY = player.capeY = player.getY();
         player.prevCapeZ = player.capeZ = player.getZ();
 
-        world.addPlayer(player.getEntityId(), player);
-
-        // set player chunk coordinates,
-        // usually these get set when adding the entity to a chunk,
-        // however the chunk the player is in is not actually loaded yet
-        player.chunkX = MathHelper.floor(player.getX() / 16.0);
-        player.chunkY = MathHelper.clamp(MathHelper.floor(player.getY() / 16.0), 0, 16);
-        player.chunkZ = MathHelper.floor(player.getZ() / 16.0);
-
-        world.getChunkManager().setChunkMapCenter(player.chunkX, player.chunkZ);
+        world.addPlayer(player.getId(), player);
+        world.getChunkManager().setChunkMapCenter(player.getChunkPos().x, player.getChunkPos().z);
 
         ((ClientPlayNetworkHandlerAccessor) player.networkHandler).worldpreview$setWorld(world);
 

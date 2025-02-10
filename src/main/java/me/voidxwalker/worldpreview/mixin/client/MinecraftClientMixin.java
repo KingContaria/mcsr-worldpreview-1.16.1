@@ -36,7 +36,7 @@ public abstract class MinecraftClientMixin {
     public abstract void disconnect();
 
     @Shadow
-    public abstract void openScreen(@Nullable Screen screen);
+    public abstract void setScreen(@Nullable Screen screen);
 
     @Inject(
             method = "startIntegratedServer(Ljava/lang/String;Lnet/minecraft/util/registry/DynamicRegistryManager$Impl;Ljava/util/function/Function;Lcom/mojang/datafixers/util/Function4;ZLnet/minecraft/client/MinecraftClient$WorldLoadAction;)V",
@@ -53,7 +53,7 @@ public abstract class MinecraftClientMixin {
             }
             WorldPreview.LOGGER.info("Leaving world generation");
             this.disconnect();
-            this.openScreen(new TitleScreen());
+            this.setScreen(new TitleScreen());
             ci.cancel();
         }
     }
@@ -62,7 +62,7 @@ public abstract class MinecraftClientMixin {
             method = "reset",
             at = @At(
                     value = "INVOKE",
-                    target = "Lnet/minecraft/client/MinecraftClient;openScreen(Lnet/minecraft/client/gui/screen/Screen;)V"
+                    target = "Lnet/minecraft/client/MinecraftClient;setScreen(Lnet/minecraft/client/gui/screen/Screen;)V"
             )
     )
     private boolean smoothTransition(MinecraftClient client, Screen screen) {

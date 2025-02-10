@@ -49,7 +49,10 @@ public abstract class WorldRendererMixin {
     }
 
     @ModifyExpressionValue(
-            method = "reload*",
+            method = {
+                    "reload(Lnet/minecraft/resource/ResourceManager;)V",
+                    "reloadTransparencyShader"
+            },
             at = @At(
                     value = "INVOKE",
                     target = "Lnet/minecraft/client/MinecraftClient;isFabulousGraphicsOrBetter()Z"

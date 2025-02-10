@@ -24,6 +24,7 @@ import net.minecraft.network.packet.s2c.play.ChunkDataS2CPacket;
 import net.minecraft.network.packet.s2c.play.EntitySpawnS2CPacket;
 import net.minecraft.network.packet.s2c.play.MobSpawnS2CPacket;
 import net.minecraft.util.Util;
+import net.minecraft.util.math.Matrix4f;
 import net.minecraft.util.profiler.Profiler;
 import net.minecraft.util.registry.Registry;
 
@@ -162,14 +163,13 @@ public class WorldPreviewProperties extends DrawableHelper {
         if (entity.getVehicle() != null) {
             entity.getVehicle().updatePassengerPosition(entity);
             entity.calculateDimensions();
-            entity.updatePositionAndAngles(entity.getX(), entity.getY(), entity.getZ(), entity.yaw, entity.pitch);
+            entity.updatePositionAndAngles(entity.getX(), entity.getY(), entity.getZ(), entity.getYaw(), entity.getPitch());
         }
         entity.baseTick();
 
         profiler.pop();
     }
 
-    @SuppressWarnings("deprecation")
     public void renderWorld() {
         MinecraftClient client = MinecraftClient.getInstance();
         Profiler profiler = client.getProfiler();
@@ -178,10 +178,18 @@ public class WorldPreviewProperties extends DrawableHelper {
         profiler.swap("render_preview");
 
         RenderSystem.clear(256, MinecraftClient.IS_SYSTEM_MAC);
-        RenderSystem.loadIdentity();
-        RenderSystem.ortho(0.0, window.getFramebufferWidth(), window.getFramebufferHeight(), 0.0, 1000.0, 3000.0);
-        RenderSystem.loadIdentity();
-        RenderSystem.translatef(0.0F, 0.0F, 0.0F);
+        RenderSystem.setProjectionMatrix(Matrix4f.projectionMatrix(
+                0.0F,
+                window.getFramebufferWidth(),
+                0.0F,
+                window.getFramebufferHeight(),
+                0.1F,
+                1000.0F
+        ));
+        MatrixStack matrixStack = RenderSystem.getModelViewStack();
+        matrixStack.loadIdentity();
+        matrixStack.translate(0.0, 0.0, 0.0);
+        RenderSystem.applyModelViewMatrix();
         DiffuseLighting.disableGuiDepthLighting();
 
         profiler.push("light_map");
@@ -195,21 +203,25 @@ public class WorldPreviewProperties extends DrawableHelper {
         RenderSystem.clear(256, MinecraftClient.IS_SYSTEM_MAC);
     }
 
-    @SuppressWarnings("deprecation")
     public void renderHud(MatrixStack matrices) {
         MinecraftClient client = MinecraftClient.getInstance();
         Profiler profiler = client.getProfiler();
         Window window = client.getWindow();
 
         RenderSystem.clear(256, MinecraftClient.IS_SYSTEM_MAC);
-        RenderSystem.matrixMode(5889);
-        RenderSystem.loadIdentity();
-        RenderSystem.ortho(0.0D, (double) window.getFramebufferWidth() / window.getScaleFactor(), (double) window.getFramebufferHeight() / window.getScaleFactor(), 0.0D, 1000.0D, 3000.0D);
-        RenderSystem.matrixMode(5888);
-        RenderSystem.loadIdentity();
-        RenderSystem.translatef(0.0F, 0.0F, -2000.0F);
+        RenderSystem.setProjectionMatrix(Matrix4f.projectionMatrix(
+                0.0F,
+                (float) (window.getFramebufferWidth() / window.getScaleFactor()),
+                0.0F,
+                (float) (window.getFramebufferHeight() / window.getScaleFactor()),
+                1000.0F,
+                3000.0F
+        ));
+        MatrixStack matrixStack = RenderSystem.getModelViewStack();
+        matrixStack.loadIdentity();
+        matrixStack.translate(0.0, 0.0, -2000.0);
+        RenderSystem.applyModelViewMatrix();
         DiffuseLighting.enableGuiDepthLighting();
-        RenderSystem.defaultAlphaFunc();
 
         profiler.push("ingame_hud");
         client.inGameHud.render(matrices, 0.0F);

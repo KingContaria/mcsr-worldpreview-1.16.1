@@ -80,7 +80,7 @@ public abstract class LevelLoadingScreenMixin extends Screen {
     protected void init() {
         this.buttons = WorldPreviewProperties.createMenu(this.width, this.height, () -> this.showMenu = false, WorldPreview::kill);
         for (ButtonWidget button : this.buttons) {
-            this.addButton(button);
+            this.addDrawableChild(button);
         }
     }
 

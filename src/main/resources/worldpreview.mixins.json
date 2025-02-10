@@ -2,7 +2,7 @@
   "required": true,
   "minVersion": "0.8",
   "package": "me.voidxwalker.worldpreview.mixin",
-  "compatibilityLevel": "JAVA_8",
+  "compatibilityLevel": "JAVA_16",
   "client": [
     "access.ClientPlayNetworkHandlerAccessor",
     "access.EntityAccessor",
@@ -20,7 +20,7 @@
     "client.render.InGameHudMixin",
     "client.render.LevelLoadingScreenMixin",
     "client.render.WorldRendererMixin",
-    "compat.sodium.ChunkRenderContainerMixin",
+    "compat.sodium.RenderSectionManagerMixin",
     "parity.EntityMixin",
     "parity.SpawnLocatingMixin",
     "server.ChunkHolderMixin",

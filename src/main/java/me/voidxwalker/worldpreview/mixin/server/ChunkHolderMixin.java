@@ -4,45 +4,49 @@ import com.llamalad7.mixinextras.sugar.Local;
 import me.voidxwalker.worldpreview.interfaces.WPChunkHolder;
 import net.minecraft.server.world.ChunkHolder;
 import net.minecraft.world.LightType;
-import net.minecraft.world.chunk.WorldChunk;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Unique;
 import org.spongepowered.asm.mixin.injection.At;
-import org.spongepowered.asm.mixin.injection.Inject;
-import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
+import org.spongepowered.asm.mixin.injection.ModifyArg;
+
+import java.util.BitSet;
 
 @Mixin(ChunkHolder.class)
 public abstract class ChunkHolderMixin implements WPChunkHolder {
-
     @Unique
-    private int worldPreviewSkyLightUpdateBits;
+    private final BitSet worldPreviewSkyLightUpdateBits = new BitSet();
     @Unique
-    private int worldPreviewBlockLightUpdateBits;
+    private final BitSet worldPreviewBlockLightUpdateBits = new BitSet();
 
-    @Inject(
+    @ModifyArg(
             method = "markForLightUpdate",
             at = @At(
                     value = "INVOKE",
-                    target = "Lnet/minecraft/world/chunk/WorldChunk;setShouldSave(Z)V",
-                    shift = At.Shift.AFTER
+                    target = "Ljava/util/BitSet;set(I)V"
             )
     )
-    private void captureLightUpdates(LightType type, int y, CallbackInfo ci, @Local WorldChunk chunk) {
+    private int captureLightUpdates(int index, @Local(argsOnly = true) LightType type) {
         if (type == LightType.SKY) {
-            this.worldPreviewSkyLightUpdateBits |= 1 << y + 1;
+            this.worldPreviewSkyLightUpdateBits.set(index);
         } else {
-            this.worldPreviewBlockLightUpdateBits |= 1 << y + 1;
+            this.worldPreviewBlockLightUpdateBits.set(index);
         }
+        return index;
     }
 
     @Override
-    public int[] worldpreview$flushUpdates() {
-        int[] lightUpdates = new int[]{
-                this.worldPreviewSkyLightUpdateBits,
-                this.worldPreviewBlockLightUpdateBits
-        };
-        this.worldPreviewSkyLightUpdateBits = 0;
-        this.worldPreviewBlockLightUpdateBits = 0;
-        return lightUpdates;
+    public BitSet worldpreview$getSkyLightUpdateBits() {
+        return this.worldPreviewSkyLightUpdateBits;
+    }
+
+    @Override
+    public BitSet worldpreview$getBlockLightUpdateBits() {
+        return this.worldPreviewBlockLightUpdateBits;
+    }
+
+    @Override
+    public void worldpreview$flushUpdates() {
+        this.worldPreviewSkyLightUpdateBits.clear();
+        this.worldPreviewBlockLightUpdateBits.clear();
     }
 }

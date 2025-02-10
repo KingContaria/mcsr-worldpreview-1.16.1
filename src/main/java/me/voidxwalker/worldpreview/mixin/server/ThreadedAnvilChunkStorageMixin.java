@@ -26,7 +26,6 @@ import net.minecraft.network.packet.s2c.play.LightUpdateS2CPacket;
 import net.minecraft.server.world.ChunkHolder;
 import net.minecraft.server.world.ServerWorld;
 import net.minecraft.server.world.ThreadedAnvilChunkStorage;
-import net.minecraft.util.collection.TypeFilterableList;
 import net.minecraft.util.math.*;
 import net.minecraft.world.chunk.Chunk;
 import net.minecraft.world.chunk.ChunkStatus;
@@ -37,16 +36,13 @@ import org.spongepowered.asm.mixin.Shadow;
 import org.spongepowered.asm.mixin.Unique;
 import org.spongepowered.asm.mixin.injection.At;
 
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
-import java.util.Queue;
+import java.util.*;
 
 @Mixin(ThreadedAnvilChunkStorage.class)
 public abstract class ThreadedAnvilChunkStorageMixin implements WPThreadedAnvilChunkStorage {
     @Shadow
     @Final
-    private ServerWorld world;
+    ServerWorld world;
 
     @Shadow
     private volatile Long2ObjectLinkedOpenHashMap<ChunkHolder> chunkHolders;
@@ -149,9 +145,9 @@ public abstract class ThreadedAnvilChunkStorageMixin implements WPThreadedAnvilC
 
         List<Packet<?>> chunkPackets = new ArrayList<>();
 
-        chunkPackets.add(new ChunkDataS2CPacket(chunk, 65535));
+        chunkPackets.add(new ChunkDataS2CPacket(chunk));
+        chunkPackets.add(new LightUpdateS2CPacket(chunk.getPos(), chunk.getWorld().getLightingProvider(), ((WPChunkHolder) holder).worldpreview$getSkyLightUpdateBits(), ((WPChunkHolder) holder).worldpreview$getBlockLightUpdateBits(), true));
         ((WPChunkHolder) holder).worldpreview$flushUpdates();
-        chunkPackets.add(new LightUpdateS2CPacket(chunk.getPos(), chunk.getLightingProvider(), true));
         chunkPackets.addAll(this.processNeighborChunks(pos));
 
         this.sentChunks.add(pos.toLong());
@@ -197,9 +193,11 @@ public abstract class ThreadedAnvilChunkStorageMixin implements WPThreadedAnvilC
                 }
 
                 if (this.sentChunks.contains(neighbor)) {
-                    int[] lightUpdates = ((WPChunkHolder) neighborHolder).worldpreview$flushUpdates();
-                    if (lightUpdates[0] != 0 || lightUpdates[1] != 0) {
-                        packets.add(new LightUpdateS2CPacket(new ChunkPos(neighbor), neighborChunk.getLightingProvider(), lightUpdates[0], lightUpdates[1], false));
+                    BitSet skyLight = ((WPChunkHolder) neighborHolder).worldpreview$getSkyLightUpdateBits();
+                    BitSet blockLight = ((WPChunkHolder) neighborHolder).worldpreview$getBlockLightUpdateBits();
+                    if (!skyLight.isEmpty() || !blockLight.isEmpty()) {
+                        packets.add(new LightUpdateS2CPacket(new ChunkPos(neighbor), neighborChunk.getWorld().getLightingProvider(), skyLight, blockLight, false));
+                        ((WPChunkHolder) neighborHolder).worldpreview$flushUpdates();
                     }
                 } else if (this.culledChunks.contains(neighbor) && !this.sentEmptyChunks.contains(neighbor)) {
                     packets.add(this.createEmptyChunkPacket(neighborChunk));
@@ -213,16 +211,17 @@ public abstract class ThreadedAnvilChunkStorageMixin implements WPThreadedAnvilC
     @Unique
     private void sendData(Queue<Packet<?>> packetQueue, ClientPlayerEntity player, WorldChunk chunk) {
         ChunkPos pos = chunk.getPos();
-        if (pos.method_24022(new ChunkPos(player.getBlockPos())) > WorldPreview.config.chunkDistance) {
+        if (pos.getChebyshevDistance(new ChunkPos(player.getBlockPos())) > WorldPreview.config.chunkDistance) {
             return;
         }
 
         List<Packet<?>> chunkPackets = this.processChunk(chunk);
 
         List<Packet<?>> entityPackets = new ArrayList<>();
-        for (TypeFilterableList<Entity> entities : chunk.getEntitySectionArray()) {
-            for (Entity entity : entities) {
-                entityPackets.addAll(this.processEntity(entity));
+
+        for (ThreadedAnvilChunkStorage$EntityTrackerAccessor tracker : this.entityTrackers.values()) {
+            if (pos.equals(tracker.worldpreview$getEntity().getChunkPos())) {
+                entityPackets.addAll(this.processEntity(tracker));
             }
         }
 
@@ -243,14 +242,15 @@ public abstract class ThreadedAnvilChunkStorageMixin implements WPThreadedAnvilC
     }
 
     @Unique
-    private List<Packet<?>> processEntity(Entity entity) {
-        int id = entity.getEntityId();
+    private List<Packet<?>> processEntity(ThreadedAnvilChunkStorage$EntityTrackerAccessor tracker) {
+        Entity entity = tracker.worldpreview$getEntity();
+        int id = entity.getId();
         if (this.sentEntities.contains(id) || this.culledEntities.contains(id)) {
             return Collections.emptyList();
         }
 
         if (this.shouldCullEntity(entity)) {
-            this.culledEntities.add(entity.getEntityId());
+            this.culledEntities.add(id);
             return Collections.emptyList();
         }
 
@@ -259,16 +259,16 @@ public abstract class ThreadedAnvilChunkStorageMixin implements WPThreadedAnvilC
         // ensure vehicles are processed before their passengers
         Entity vehicle = entity.getVehicle();
         if (vehicle != null) {
-            if (entity.chunkX != vehicle.chunkX || entity.chunkZ != vehicle.chunkZ) {
+            if (!entity.getChunkPos().equals(vehicle.getChunkPos())) {
                 WorldPreview.LOGGER.warn("Failed to send entity to preview! Entity and its vehicle are in different chunks.");
                 return Collections.emptyList();
             }
-            entityPackets.addAll(this.processEntity(vehicle));
+            entityPackets.addAll(this.processEntity(this.entityTrackers.get(vehicle.getId())));
         }
 
-        this.entityTrackers.get(id).getEntry().sendPackets(entityPackets::add);
+        tracker.worldpreview$getEntry().sendPackets(entityPackets::add);
         // see EntityTrackerEntry#tick
-        entityPackets.add(new EntityS2CPacket.Rotate(id, (byte) MathHelper.floor(entity.yaw * 256.0f / 360.0f), (byte) MathHelper.floor(entity.pitch * 256.0f / 360.0f), entity.isOnGround()));
+        entityPackets.add(new EntityS2CPacket.Rotate(id, (byte) MathHelper.floor(entity.getYaw() * 256.0f / 360.0f), (byte) MathHelper.floor(entity.getPitch() * 256.0f / 360.0f), entity.isOnGround()));
         entityPackets.add(new EntitySetHeadYawS2CPacket(entity, (byte) MathHelper.floor(entity.getHeadYaw() * 256.0f / 360.0f)));
 
         this.sentEntities.add(id);
@@ -296,7 +296,7 @@ public abstract class ThreadedAnvilChunkStorageMixin implements WPThreadedAnvilC
 
     @Unique
     private ChunkDataS2CPacket createEmptyChunkPacket(WorldChunk chunk) {
-        return new ChunkDataS2CPacket(new WorldChunk(chunk.getWorld(), chunk.getPos(), chunk.getBiomeArray()), 65535);
+        return new ChunkDataS2CPacket(new WorldChunk(chunk.getWorld(), chunk.getPos(), chunk.getBiomeArray()));
     }
 
     @Override
