@@ -59,13 +59,11 @@ public abstract class LevelLoadingScreenMixin extends Screen {
         if (properties == null) {
             return true;
         }
-
-        if (WorldPreview.isKilled()) {
-            return false;
-        }
-
         if (!properties.isInitialized()) {
             properties.initialize();
+        }
+        if (WorldPreview.isKilled()) {
+            return false;
         }
         properties.run(p -> this.renderWorldPreview(p, matrices, mouseX, mouseY, delta));
         return false;
