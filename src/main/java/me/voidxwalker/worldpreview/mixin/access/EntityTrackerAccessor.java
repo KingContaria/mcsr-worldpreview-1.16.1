@@ -6,7 +6,7 @@ import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.gen.Accessor;
 
 @Mixin(targets = "net.minecraft.server.world.ThreadedAnvilChunkStorage$EntityTracker")
-public interface ThreadedAnvilChunkStorage$EntityTrackerAccessor {
+public interface EntityTrackerAccessor {
     @Accessor("entry")
     EntityTrackerEntry worldpreview$getEntry();
 
