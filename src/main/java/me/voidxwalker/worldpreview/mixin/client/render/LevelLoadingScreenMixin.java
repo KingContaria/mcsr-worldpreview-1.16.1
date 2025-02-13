@@ -73,12 +73,16 @@ public abstract class LevelLoadingScreenMixin extends Screen {
         properties.render(mouseX, mouseY, delta, this.buttons, this.width, this.height, this.showMenu);
     }
 
+    @Unique
+    private void setShowMenu(boolean showMenu) {
+        this.showMenu = showMenu;
+        this.buttons.forEach(button -> button.visible = this.showMenu);
+    }
+
     @Override
     protected void init() {
-        this.buttons = WorldPreviewProperties.createMenu(this.width, this.height, () -> this.showMenu = false, WorldPreview::kill);
-        for (ButtonWidget button : this.buttons) {
-            this.addButton(button);
-        }
+        this.buttons = WorldPreviewProperties.createMenu(this.width, this.height, () -> this.setShowMenu(false), WorldPreview::kill);
+        this.buttons.forEach(button -> this.addButton(button).visible = this.showMenu);
     }
 
     @Override
@@ -92,10 +96,10 @@ public abstract class LevelLoadingScreenMixin extends Screen {
         if (keyCode == GLFW.GLFW_KEY_ESCAPE) {
             if (this.showMenu) {
                 if (InputUtil.isKeyPressed(MinecraftClient.getInstance().getWindow().getHandle(), GLFW.GLFW_KEY_F3)) {
-                    this.showMenu = false;
+                    this.setShowMenu(false);
                 }
             } else {
-                this.showMenu = true;
+                this.setShowMenu(true);
             }
             return true;
         }
