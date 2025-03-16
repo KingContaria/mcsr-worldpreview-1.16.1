@@ -12,7 +12,7 @@ import me.voidxwalker.worldpreview.WorldPreview;
 import me.voidxwalker.worldpreview.WorldPreviewProperties;
 import me.voidxwalker.worldpreview.interfaces.WPChunkHolder;
 import me.voidxwalker.worldpreview.interfaces.WPThreadedAnvilChunkStorage;
-import me.voidxwalker.worldpreview.mixin.access.ThreadedAnvilChunkStorage$EntityTrackerAccessor;
+import me.voidxwalker.worldpreview.mixin.access.EntityTrackerAccessor;
 import net.minecraft.client.network.ClientPlayerEntity;
 import net.minecraft.entity.Entity;
 import net.minecraft.network.Packet;
@@ -51,7 +51,7 @@ public abstract class ThreadedAnvilChunkStorageMixin implements WPThreadedAnvilC
 
     @Shadow
     @Final
-    private Int2ObjectMap<ThreadedAnvilChunkStorage$EntityTrackerAccessor> entityTrackers;
+    private Int2ObjectMap<EntityTrackerAccessor> entityTrackers;
 
     @Unique
     private final LongSet sentChunks = new LongOpenHashSet();

@@ -59,9 +59,10 @@ public abstract class MinecraftServerMixin implements WPMinecraftServer {
     )
     private ServerWorld configureWorldPreview(ServerWorld serverWorld) {
         if (this.shouldConfigurePreview && !this.killed) {
-            WorldPreview.configure(serverWorld);
-            this.shouldConfigurePreview = false;
-            ((WPThreadedAnvilChunkStorage) serverWorld.getChunkManager().threadedAnvilChunkStorage).worldpreview$sendData();
+            if (WorldPreview.configure(serverWorld)) {
+                this.shouldConfigurePreview = false;
+                ((WPThreadedAnvilChunkStorage) serverWorld.getChunkManager().threadedAnvilChunkStorage).worldpreview$sendData();
+            }
         }
         return serverWorld;
     }
