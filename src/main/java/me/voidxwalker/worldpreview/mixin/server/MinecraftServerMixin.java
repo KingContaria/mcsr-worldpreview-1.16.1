@@ -2,6 +2,7 @@ package me.voidxwalker.worldpreview.mixin.server;
 
 import com.llamalad7.mixinextras.injector.ModifyExpressionValue;
 import com.llamalad7.mixinextras.injector.ModifyReturnValue;
+import com.llamalad7.mixinextras.injector.v2.WrapWithCondition;
 import com.llamalad7.mixinextras.injector.wrapoperation.Operation;
 import com.llamalad7.mixinextras.injector.wrapoperation.WrapOperation;
 import com.llamalad7.mixinextras.sugar.Share;
@@ -14,6 +15,7 @@ import net.minecraft.server.WorldGenerationProgressListener;
 import net.minecraft.server.world.ChunkTicketType;
 import net.minecraft.server.world.ServerChunkManager;
 import net.minecraft.server.world.ServerWorld;
+import net.minecraft.util.crash.CrashReport;
 import net.minecraft.util.math.ChunkPos;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Unique;
@@ -21,6 +23,8 @@ import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.ModifyVariable;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
+
+import java.io.IOException;
 
 @Mixin(MinecraftServer.class)
 public abstract class MinecraftServerMixin implements WPMinecraftServer {
@@ -108,6 +112,55 @@ public abstract class MinecraftServerMixin implements WPMinecraftServer {
     private synchronized boolean killServer(boolean original) {
         this.tooLateToKill = true;
         return original && !this.killed;
+    }
+
+    @WrapWithCondition(
+            method = "runServer",
+            at = @At(
+                    value = "INVOKE",
+                    target = "Lnet/minecraft/server/MinecraftServer;setCrashReport(Lnet/minecraft/util/crash/CrashReport;)V",
+                    ordinal = 0
+            )
+    )
+    private boolean doNotSetCrashReport(MinecraftServer server, CrashReport report) {
+        return !this.killed;
+    }
+
+    @ModifyExpressionValue(
+            method = "shutdown",
+            at = @At(
+                    value = "INVOKE",
+                    target = "Ljava/util/stream/Stream;anyMatch(Ljava/util/function/Predicate;)Z"
+            )
+    )
+    private boolean doNotDelayShutdown(boolean shouldDelayShutdown) {
+        return shouldDelayShutdown && !this.killed;
+    }
+
+    @WrapWithCondition(
+            method = "shutdown",
+            at = @At(
+                    value = "INVOKE",
+                    target = "Lnet/minecraft/server/MinecraftServer;save(ZZZ)Z"
+            )
+    )
+    private boolean doNotSave(MinecraftServer server, boolean suppressLogs, boolean flush, boolean force) {
+        return !this.killed;
+    }
+
+    @WrapOperation(
+            method = "shutdown",
+            at = @At(
+                    value = "INVOKE",
+                    target = "Lnet/minecraft/server/world/ServerWorld;close()V"
+            )
+    )
+    private void doNotCloseWorld(ServerWorld world, Operation<Void> original) throws IOException {
+        if (this.killed) {
+            world.getChunkManager().threadedAnvilChunkStorage.close();
+        } else {
+            original.call(world);
+        }
     }
 
     @Override
