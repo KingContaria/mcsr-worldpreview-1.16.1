@@ -8,7 +8,7 @@ import com.llamalad7.mixinextras.injector.wrapoperation.WrapOperation;
 import com.llamalad7.mixinextras.sugar.Local;
 import me.voidxwalker.worldpreview.WorldPreview;
 import me.voidxwalker.worldpreview.interfaces.WPMinecraftServer;
-import me.voidxwalker.worldpreview.interfaces.WPThreadedAnvilChunkStorage;
+import me.voidxwalker.worldpreview.interfaces.WPServerChunkLoadingManager;
 import me.voidxwalker.worldpreview.mixin.access.ServerWorldAccessor;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.WorldGenerationProgressListener;
@@ -75,7 +75,7 @@ public abstract class MinecraftServerMixin implements WPMinecraftServer {
         if (this.shouldConfigurePreview && !this.killed) {
             if (WorldPreview.configure(serverWorld)) {
                 this.shouldConfigurePreview = false;
-                ((WPThreadedAnvilChunkStorage) serverWorld.getChunkManager().threadedAnvilChunkStorage).worldpreview$sendData();
+                ((WPServerChunkLoadingManager) serverWorld.getChunkManager().chunkLoadingManager).worldpreview$sendData();
             }
         }
         return serverWorld;
@@ -179,7 +179,7 @@ public abstract class MinecraftServerMixin implements WPMinecraftServer {
     )
     private void doNotCloseWorld(ServerWorld world, Operation<Void> original) throws IOException {
         if (this.killed) {
-            world.getChunkManager().threadedAnvilChunkStorage.close();
+            world.getChunkManager().chunkLoadingManager.close();
         } else {
             original.call(world);
         }

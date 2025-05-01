@@ -4,14 +4,15 @@
   "package": "me.voidxwalker.worldpreview.mixin",
   "compatibilityLevel": "JAVA_21",
   "client": [
+    "access.AbstractChunkHolderAccessor",
     "access.ClientPlayNetworkHandlerAccessor",
     "access.EntityAccessor",
     "access.EntityTrackerAccessor",
     "access.GameRendererAccessor",
     "access.MinecraftClientAccessor",
     "access.PlayerEntityAccessor",
+    "access.ServerChunkLoadingManagerAccessor",
     "access.ServerWorldAccessor",
-    "access.ThreadedAnvilChunkStorageAccessor",
     "client.CameraMixin",
     "client.ClientPlayNetworkHandlerMixin",
     "client.MinecraftClientMixin",
@@ -27,8 +28,8 @@
     "server.ChunkHolderMixin",
     "server.MinecraftServerMixin",
     "server.PlayerListS2CPacketEntryMixin",
-    "server.ServerPlayerEntityMixin",
-    "server.ThreadedAnvilChunkStorageMixin"
+    "server.ServerChunkLoadingManagerMixin",
+    "server.ServerPlayerEntityMixin"
   ],
   "injectors": {
     "defaultRequire": 1

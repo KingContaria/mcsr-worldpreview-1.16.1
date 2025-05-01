@@ -2,11 +2,12 @@ package me.voidxwalker.worldpreview.mixin.parity;
 
 import me.voidxwalker.worldpreview.WorldPreview;
 import me.voidxwalker.worldpreview.WorldPreviewMissingChunkException;
-import me.voidxwalker.worldpreview.mixin.access.ThreadedAnvilChunkStorageAccessor;
+import me.voidxwalker.worldpreview.mixin.access.AbstractChunkHolderAccessor;
+import me.voidxwalker.worldpreview.mixin.access.ServerChunkLoadingManagerAccessor;
 import net.minecraft.server.world.ChunkHolder;
 import net.minecraft.server.world.OptionalChunk;
+import net.minecraft.server.world.ServerChunkLoadingManager;
 import net.minecraft.server.world.ServerChunkManager;
-import net.minecraft.server.world.ThreadedAnvilChunkStorage;
 import net.minecraft.util.math.ChunkPos;
 import net.minecraft.world.chunk.Chunk;
 import net.minecraft.world.chunk.ChunkStatus;
@@ -21,9 +22,8 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
 @Mixin(ServerChunkManager.class)
 public abstract class ServerChunkManagerMixin {
-    @Shadow
-    @Final
-    public ThreadedAnvilChunkStorage threadedAnvilChunkStorage;
+
+    @Shadow @Final public ServerChunkLoadingManager chunkLoadingManager;
 
     @Inject(
             method = "getChunk(IILnet/minecraft/world/chunk/ChunkStatus;Z)Lnet/minecraft/world/chunk/Chunk;",
@@ -43,11 +43,11 @@ public abstract class ServerChunkManagerMixin {
 
     @Unique
     private @Nullable Chunk getChunkNow(int x, int z, ChunkStatus leastStatus) {
-        ChunkHolder holder = ((ThreadedAnvilChunkStorageAccessor) this.threadedAnvilChunkStorage).worldpreview$getCurrentChunkHolder(ChunkPos.toLong(x, z));
+        ChunkHolder holder = ((ServerChunkLoadingManagerAccessor) this.chunkLoadingManager).worldpreview$getCurrentChunkHolder(ChunkPos.toLong(x, z));
         if (holder == null) {
             return null;
         }
-        OptionalChunk<Chunk> optional = holder.getFutureFor(leastStatus).getNow(null);
+        OptionalChunk<Chunk> optional = ((AbstractChunkHolderAccessor) holder).worldpreview$etOrCreateFuture(leastStatus).getNow(null);
         if (optional == null) {
             return null;
         }

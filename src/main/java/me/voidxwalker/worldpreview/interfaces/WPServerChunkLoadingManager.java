@@ -1,5 +1,5 @@
 package me.voidxwalker.worldpreview.interfaces;
 
-public interface WPThreadedAnvilChunkStorage {
+public interface WPServerChunkLoadingManager {
     void worldpreview$sendData();
 }

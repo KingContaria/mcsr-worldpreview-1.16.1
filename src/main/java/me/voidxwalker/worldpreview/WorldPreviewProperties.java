@@ -26,7 +26,6 @@ import net.minecraft.network.packet.Packet;
 import net.minecraft.network.packet.s2c.play.ChunkDataS2CPacket;
 import net.minecraft.network.packet.s2c.play.EntitySpawnS2CPacket;
 import net.minecraft.registry.Registries;
-import net.minecraft.util.Util;
 import net.minecraft.util.profiler.Profiler;
 import org.joml.Matrix4f;
 import org.joml.Matrix4fStack;
@@ -196,7 +195,7 @@ public class WorldPreviewProperties {
         profiler.push("light_map");
         client.gameRenderer.getLightmapTextureManager().tick();
         profiler.swap("render_world");
-        client.gameRenderer.renderWorld(0.0F, Util.getMeasuringTimeNano());
+        client.gameRenderer.renderWorld(client.getRenderTickCounter());
         profiler.swap("entity_outlines");
         client.worldRenderer.drawEntityOutlinesFramebuffer();
         profiler.pop();
@@ -227,7 +226,7 @@ public class WorldPreviewProperties {
         DiffuseLighting.enableGuiDepthLighting();
 
         profiler.push("ingame_hud");
-        client.inGameHud.render(context, 0.0F);
+        client.inGameHud.render(context, client.getRenderTickCounter());
         profiler.pop();
 
         matrix4fStack.popMatrix();

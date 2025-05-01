@@ -10,11 +10,11 @@ import net.minecraft.client.network.*;
 import net.minecraft.client.option.Perspective;
 import net.minecraft.client.render.Camera;
 import net.minecraft.client.render.WorldRenderer;
-import net.minecraft.client.render.entity.PlayerModelPart;
 import net.minecraft.client.session.telemetry.TelemetrySender;
 import net.minecraft.client.session.telemetry.WorldSession;
 import net.minecraft.client.world.ClientWorld;
 import net.minecraft.entity.EntityType;
+import net.minecraft.entity.player.PlayerModelPart;
 import net.minecraft.nbt.NbtCompound;
 import net.minecraft.nbt.NbtList;
 import net.minecraft.network.packet.Packet;
@@ -93,7 +93,9 @@ public class WorldPreview {
                         null,
                         Collections.emptyMap(),
                         null,
-                        false
+                        false,
+                        Collections.emptyMap(),
+                        serverWorld.getServer().getServerLinks()
                 )
         );
 

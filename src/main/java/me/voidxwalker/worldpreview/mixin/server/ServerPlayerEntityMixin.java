@@ -20,7 +20,7 @@ public abstract class ServerPlayerEntityMixin {
     private static final ThreadLocal<Integer> PREVIEW_SPAWNPOS = new ThreadLocal<>();
 
     @ModifyExpressionValue(
-            method = "moveToSpawn",
+            method = "getWorldSpawnPos",
             at = @At(
                     value = "INVOKE",
                     target = "Lnet/minecraft/util/math/random/Random;nextInt(I)I"

@@ -1,6 +1,5 @@
 package me.voidxwalker.worldpreview.mixin.server;
 
-import com.llamalad7.mixinextras.injector.ModifyReturnValue;
 import it.unimi.dsi.fastutil.ints.Int2ObjectMap;
 import it.unimi.dsi.fastutil.ints.IntOpenHashSet;
 import it.unimi.dsi.fastutil.ints.IntSet;
@@ -10,7 +9,7 @@ import it.unimi.dsi.fastutil.longs.LongSet;
 import me.voidxwalker.worldpreview.WorldPreview;
 import me.voidxwalker.worldpreview.WorldPreviewProperties;
 import me.voidxwalker.worldpreview.interfaces.WPChunkHolder;
-import me.voidxwalker.worldpreview.interfaces.WPThreadedAnvilChunkStorage;
+import me.voidxwalker.worldpreview.interfaces.WPServerChunkLoadingManager;
 import me.voidxwalker.worldpreview.mixin.access.EntityTrackerAccessor;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.network.ClientPlayerEntity;
@@ -24,11 +23,9 @@ import net.minecraft.network.packet.s2c.play.EntitySetHeadYawS2CPacket;
 import net.minecraft.network.packet.s2c.play.LightUpdateS2CPacket;
 import net.minecraft.server.world.ChunkHolder;
 import net.minecraft.server.world.OptionalChunk;
+import net.minecraft.server.world.ServerChunkLoadingManager;
 import net.minecraft.server.world.ServerWorld;
-import net.minecraft.server.world.ThreadedAnvilChunkStorage;
 import net.minecraft.util.math.*;
-import net.minecraft.world.chunk.Chunk;
-import net.minecraft.world.chunk.ChunkStatus;
 import net.minecraft.world.chunk.WorldChunk;
 import org.joml.Matrix4f;
 import org.spongepowered.asm.mixin.Final;
@@ -36,11 +33,13 @@ import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
 import org.spongepowered.asm.mixin.Unique;
 import org.spongepowered.asm.mixin.injection.At;
+import org.spongepowered.asm.mixin.injection.Inject;
+import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
 import java.util.*;
 
-@Mixin(ThreadedAnvilChunkStorage.class)
-public abstract class ThreadedAnvilChunkStorageMixin implements WPThreadedAnvilChunkStorage {
+@Mixin(ServerChunkLoadingManager.class)
+public abstract class ServerChunkLoadingManagerMixin implements WPServerChunkLoadingManager {
     @Shadow
     @Final
     ServerWorld world;
@@ -76,11 +75,11 @@ public abstract class ThreadedAnvilChunkStorageMixin implements WPThreadedAnvilC
     @Unique
     private double aspectRatio;
 
-    @ModifyReturnValue(
-            method = "method_17227",
+    @Inject(
+            method = "method_53684",
             at = @At("RETURN")
     )
-    private Chunk getChunks(Chunk chunk) {
+    private void getChunks(CallbackInfo ci) {
         // it's possible to optimize this by only sending the data for the new chunk
         // however that needs more careful thought and since this now only gets called 529 times
         // per world it isn't hugely impactful
@@ -88,7 +87,6 @@ public abstract class ThreadedAnvilChunkStorageMixin implements WPThreadedAnvilC
         // - check all chunks on frustum update / initial sendData
         // - entities spawning in neighbouring chunks
         this.worldpreview$sendData();
-        return chunk;
     }
 
     @Unique
@@ -281,15 +279,11 @@ public abstract class ThreadedAnvilChunkStorageMixin implements WPThreadedAnvilC
 
     @Unique
     private WorldChunk getWorldChunk(ChunkHolder holder) {
-        OptionalChunk<Chunk> optional = holder.getFutureFor(ChunkStatus.FULL).getNow(null);
+        OptionalChunk<WorldChunk> optional = holder.getAccessibleFuture().getNow(null);
         if (optional == null) {
             return null;
         }
-        Chunk chunk = optional.orElse(null);
-        if (chunk instanceof WorldChunk) {
-            return (WorldChunk) chunk;
-        }
-        return null;
+        return optional.orElse(null);
     }
 
     @Unique
@@ -319,11 +313,11 @@ public abstract class ThreadedAnvilChunkStorageMixin implements WPThreadedAnvilC
         this.updateFrustum(properties.player, properties.camera);
 
         for (ChunkHolder holder : this.chunkHolders.values()) {
-            OptionalChunk<Chunk> optional = holder.getFutureFor(ChunkStatus.FULL).getNow(null);
+            OptionalChunk<WorldChunk> optional = holder.getAccessibleFuture().getNow(null);
             if (optional == null) {
                 continue;
             }
-            WorldChunk worldChunk = (WorldChunk) optional.orElse(null);
+            WorldChunk worldChunk = optional.orElse(null);
             if (worldChunk == null) {
                 continue;
             }
