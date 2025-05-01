@@ -4,11 +4,11 @@ import com.llamalad7.mixinextras.injector.v2.WrapWithCondition;
 import me.voidxwalker.worldpreview.WorldPreview;
 import me.voidxwalker.worldpreview.WorldPreviewProperties;
 import net.minecraft.client.MinecraftClient;
+import net.minecraft.client.gui.DrawContext;
 import net.minecraft.client.gui.screen.LevelLoadingScreen;
 import net.minecraft.client.gui.screen.Screen;
 import net.minecraft.client.gui.widget.GridWidget;
 import net.minecraft.client.util.InputUtil;
-import net.minecraft.client.util.math.MatrixStack;
 import net.minecraft.text.Text;
 import org.lwjgl.glfw.GLFW;
 import org.spongepowered.asm.mixin.Mixin;
@@ -49,10 +49,10 @@ public abstract class LevelLoadingScreenMixin extends Screen {
             method = "render",
             at = @At(
                     value = "INVOKE",
-                    target = "Lnet/minecraft/client/gui/screen/LevelLoadingScreen;renderBackground(Lnet/minecraft/client/util/math/MatrixStack;)V"
+                    target = "Lnet/minecraft/client/gui/screen/LevelLoadingScreen;renderBackground(Lnet/minecraft/client/gui/DrawContext;)V"
             )
     )
-    private boolean renderWorldPreview(LevelLoadingScreen screen, MatrixStack ignored, MatrixStack matrices, int mouseX, int mouseY, float delta) {
+    private boolean renderWorldPreview(LevelLoadingScreen screen, DrawContext ignored, DrawContext context, int mouseX, int mouseY, float delta) {
         WorldPreviewProperties properties = WorldPreview.properties;
         if (properties == null) {
             return true;
@@ -63,13 +63,13 @@ public abstract class LevelLoadingScreenMixin extends Screen {
         if (WorldPreview.isKilled()) {
             return false;
         }
-        properties.run(p -> this.renderWorldPreview(p, matrices, mouseX, mouseY, delta));
+        properties.run(p -> this.renderWorldPreview(p, context, mouseX, mouseY, delta));
         return false;
     }
 
     @Unique
-    private void renderWorldPreview(WorldPreviewProperties properties, MatrixStack matrices, int mouseX, int mouseY, float delta) {
-        properties.render(matrices, mouseX, mouseY, delta, this.gridWidget, this.width, this.height, this.showMenu);
+    private void renderWorldPreview(WorldPreviewProperties properties, DrawContext context, int mouseX, int mouseY, float delta) {
+        properties.render(context, mouseX, mouseY, delta, this.gridWidget, this.width, this.height, this.showMenu);
     }
 
     @Unique

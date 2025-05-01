@@ -2,6 +2,7 @@ package me.voidxwalker.worldpreview;
 
 import com.google.common.collect.Sets;
 import me.voidxwalker.worldpreview.mixin.access.ClientPlayNetworkHandlerAccessor;
+import me.voidxwalker.worldpreview.mixin.access.EntityAccessor;
 import me.voidxwalker.worldpreview.mixin.access.PlayerEntityAccessor;
 import net.fabricmc.loader.api.FabricLoader;
 import net.minecraft.client.MinecraftClient;
@@ -75,7 +76,7 @@ public class WorldPreview {
                 null,
                 null,
                 MinecraftClient.getInstance().getSession().getProfile(),
-                new WorldSession(TelemetrySender.NOOP, true, null)
+                new WorldSession(TelemetrySender.NOOP, true, null, null)
         );
         ClientPlayNetworkHandlerAccessor networkHandlerAccessor = (ClientPlayNetworkHandlerAccessor) networkHandler;
         networkHandlerAccessor.standardsettings$setCombinedDynamicRegistries(networkHandlerAccessor.standardsettings$getCombinedDynamicRegistries().with(
@@ -147,7 +148,7 @@ public class WorldPreview {
                 NbtCompound vehicleData = playerData.getCompound("RootVehicle");
                 UUID uUID = vehicleData.containsUuid("Attach") ? vehicleData.getUuid("Attach") : null;
                 EntityType.loadEntityWithPassengers(vehicleData.getCompound("Entity"), serverWorld, entity -> {
-                    entity.world = world;
+                    ((EntityAccessor) entity).worldpreview$setWorld(world);
                     world.addEntity(entity.getId(), entity);
                     if (entity.getUuid().equals(uUID)) {
                         player.startRiding(entity, true);

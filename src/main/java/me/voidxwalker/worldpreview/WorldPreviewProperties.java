@@ -2,13 +2,14 @@ package me.voidxwalker.worldpreview;
 
 import com.mojang.blaze3d.platform.GlConst;
 import com.mojang.blaze3d.systems.RenderSystem;
+import com.mojang.blaze3d.systems.VertexSorter;
 import me.contaria.speedrunapi.util.TextUtil;
 import me.voidxwalker.worldpreview.mixin.access.EntityAccessor;
 import me.voidxwalker.worldpreview.mixin.access.GameRendererAccessor;
 import me.voidxwalker.worldpreview.mixin.access.MinecraftClientAccessor;
 import me.voidxwalker.worldpreview.mixin.access.PlayerEntityAccessor;
 import net.minecraft.client.MinecraftClient;
-import net.minecraft.client.gui.DrawableHelper;
+import net.minecraft.client.gui.DrawContext;
 import net.minecraft.client.gui.widget.ButtonWidget;
 import net.minecraft.client.gui.widget.GridWidget;
 import net.minecraft.client.gui.widget.SimplePositioningWidget;
@@ -34,7 +35,7 @@ import java.util.Objects;
 import java.util.Queue;
 import java.util.function.Consumer;
 
-public class WorldPreviewProperties extends DrawableHelper {
+public class WorldPreviewProperties {
     private static final ButtonWidget.PressAction NO_OP = button -> {};
 
     public final ClientWorld world;
@@ -102,12 +103,12 @@ public class WorldPreviewProperties extends DrawableHelper {
         }
     }
 
-    public void render(MatrixStack matrices, int mouseX, int mouseY, float delta, GridWidget gridWidget, int width, int height, boolean showMenu) {
+    public void render(DrawContext context, int mouseX, int mouseY, float delta, GridWidget gridWidget, int width, int height, boolean showMenu) {
         this.tickPackets();
         this.tickEntities();
         this.renderWorld();
-        this.renderHud(matrices);
-        this.renderMenu(matrices, mouseX, mouseY, delta, gridWidget, width, height, showMenu);
+        this.renderHud(context);
+        this.renderMenu(context, mouseX, mouseY, delta, gridWidget, width, height, showMenu);
     }
 
     public void tickPackets() {
@@ -185,7 +186,7 @@ public class WorldPreviewProperties extends DrawableHelper {
                 0.0f,
                 0.1f,
                 1000.0f
-        ));
+        ), VertexSorter.BY_DISTANCE);
         MatrixStack matrixStack = RenderSystem.getModelViewStack();
         matrixStack.loadIdentity();
         matrixStack.translate(0.0, 0.0, 0.0);
@@ -203,7 +204,7 @@ public class WorldPreviewProperties extends DrawableHelper {
         RenderSystem.clear(GlConst.GL_DEPTH_BUFFER_BIT, MinecraftClient.IS_SYSTEM_MAC);
     }
 
-    public void renderHud(MatrixStack matrices) {
+    public void renderHud(DrawContext context) {
         MinecraftClient client = MinecraftClient.getInstance();
         Profiler profiler = client.getProfiler();
         Window window = client.getWindow();
@@ -215,8 +216,8 @@ public class WorldPreviewProperties extends DrawableHelper {
                 (float) (window.getFramebufferHeight() / window.getScaleFactor()),
                 0.0f,
                 1000.0f,
-                3000.0f
-        ));
+                21000.0f
+        ), VertexSorter.BY_Z);
         MatrixStack matrixStack = RenderSystem.getModelViewStack();
         matrixStack.loadIdentity();
         matrixStack.translate(0.0, 0.0, -2000.0);
@@ -224,18 +225,18 @@ public class WorldPreviewProperties extends DrawableHelper {
         DiffuseLighting.enableGuiDepthLighting();
 
         profiler.push("ingame_hud");
-        client.inGameHud.render(matrices, 0.0F);
+        client.inGameHud.render(context, 0.0F);
         profiler.pop();
 
         RenderSystem.clear(GlConst.GL_DEPTH_BUFFER_BIT, MinecraftClient.IS_SYSTEM_MAC);
     }
 
-    public void renderMenu(MatrixStack matrices, int mouseX, int mouseY, float delta, GridWidget gridWidget, int width, int height, boolean showMenu) {
+    public void renderMenu(DrawContext context, int mouseX, int mouseY, float delta, GridWidget gridWidget, int width, int height, boolean showMenu) {
         if (showMenu) {
-            DrawableHelper.fillGradient(matrices, 0, 0, width, height + 1, -1072689136, -804253680);
-            gridWidget.forEachChild(widget -> widget.render(matrices, mouseX, mouseY, delta));
+            context.fillGradient(0, 0, width, height + 1, -1072689136, -804253680);
+            gridWidget.forEachChild(widget -> widget.render(context, mouseX, mouseY, delta));
         } else {
-            DrawableHelper.drawCenteredTextWithShadow(matrices, MinecraftClient.getInstance().textRenderer, TextUtil.translatable("menu.paused"), width / 2, 10, 16777215);
+            context.drawCenteredTextWithShadow(MinecraftClient.getInstance().textRenderer, TextUtil.translatable("menu.paused"), width / 2, 10, 16777215);
         }
     }
 
