@@ -34,7 +34,7 @@ import org.spongepowered.asm.mixin.Shadow;
 import org.spongepowered.asm.mixin.Unique;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
-import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
+import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
 import java.util.*;
 
@@ -76,10 +76,10 @@ public abstract class ServerChunkLoadingManagerMixin implements WPServerChunkLoa
     private double aspectRatio;
 
     @Inject(
-            method = "method_53684",
+            method = "method_61257",
             at = @At("RETURN")
     )
-    private void getChunks(CallbackInfo ci) {
+    private void getChunks(CallbackInfoReturnable<WorldChunk> cir) {
         // it's possible to optimize this by only sending the data for the new chunk
         // however that needs more careful thought and since this now only gets called 529 times
         // per world it isn't hugely impactful
@@ -92,7 +92,7 @@ public abstract class ServerChunkLoadingManagerMixin implements WPServerChunkLoa
     @Unique
     private void updateFrustum(ClientPlayerEntity player, Camera camera) {
         MinecraftClient client = MinecraftClient.getInstance();
-        double fov = Math.min(client.options.getFov().getValue() * Math.min(Math.max(player.getFovMultiplier(), 0.1f), 1.5f), 180.0);
+        double fov = Math.min(client.options.getFov().getValue() * Math.min(Math.max(player.getFovMultiplier(!camera.isThirdPerson(), client.options.getFovEffectScale().getValue().floatValue()), 0.1f), 1.5f), 180.0);
         double aspectRatio = (double) client.getWindow().getFramebufferWidth() / client.getWindow().getFramebufferHeight();
         Vec3d cameraPos;
         float pitch;
@@ -273,8 +273,7 @@ public abstract class ServerChunkLoadingManagerMixin implements WPServerChunkLoa
 
     @Unique
     private boolean shouldCullEntity(Entity entity) {
-        // Do not try to cull entities that are vehicles or passengers, supporting that would cause unnecessary complexity
-        return !entity.hasVehicle() && !entity.hasPassengers() && !entity.ignoreCameraFrustum && !this.frustum.isVisible(entity.getVisibilityBoundingBox());
+        return !entity.hasVehicle() && !entity.hasPassengers() && !MinecraftClient.getInstance().getEntityRenderDispatcher().shouldRender(entity, this.frustum, this.cameraPos.getX(), this.cameraPos.getY(), this.cameraPos.getZ());
     }
 
     @Unique

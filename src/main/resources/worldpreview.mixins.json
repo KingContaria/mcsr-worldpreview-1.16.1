@@ -21,7 +21,6 @@
     "client.render.HeldItemRendererMixin",
     "client.render.InGameHudMixin",
     "client.render.LevelLoadingScreenMixin",
-    "client.render.WorldRendererMixin",
     "compat.sodium.ChunkTrackerMixin",
     "parity.EntityMixin",
     "parity.ServerChunkManagerMixin",

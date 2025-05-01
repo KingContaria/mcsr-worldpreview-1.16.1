@@ -4,6 +4,7 @@ import com.llamalad7.mixinextras.injector.ModifyExpressionValue;
 import com.llamalad7.mixinextras.injector.wrapoperation.Operation;
 import com.llamalad7.mixinextras.injector.wrapoperation.WrapOperation;
 import me.voidxwalker.worldpreview.WPFakeServerPlayerEntity;
+import me.voidxwalker.worldpreview.WorldPreviewMissingChunkException;
 import net.minecraft.advancement.PlayerAdvancementTracker;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.server.PlayerManager;
@@ -12,6 +13,7 @@ import net.minecraft.stat.ServerStatHandler;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Unique;
 import org.spongepowered.asm.mixin.injection.At;
+import org.spongepowered.asm.mixin.injection.ModifyVariable;
 
 @Mixin(ServerPlayerEntity.class)
 public abstract class ServerPlayerEntityMixin {
@@ -37,6 +39,17 @@ public abstract class ServerPlayerEntityMixin {
             return spawnPos;
         }
         return original;
+    }
+
+    @ModifyVariable(
+            method = "getWorldSpawnPos",
+            at = @At("STORE")
+    )
+    private Exception rethrowWorldPreviewMissingChunkException(Exception e) throws Exception {
+        if (e instanceof WorldPreviewMissingChunkException) {
+            throw e;
+        }
+        return e;
     }
 
     @WrapOperation(

@@ -2,6 +2,7 @@ package me.voidxwalker.worldpreview.mixin.client.render;
 
 import com.llamalad7.mixinextras.injector.ModifyExpressionValue;
 import me.voidxwalker.worldpreview.WorldPreview;
+import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.render.GameRenderer;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
@@ -35,7 +36,10 @@ public abstract class GameRendererMixin {
     )
     private float modifyMovementFovMultiplier(float movementFovMultiplier) {
         if (WorldPreview.renderingPreview) {
-            return Math.min(Math.max(WorldPreview.properties.player.getFovMultiplier(), 0.1f), 1.5f);
+            return Math.min(Math.max(WorldPreview.properties.player.getFovMultiplier(
+                    !WorldPreview.properties.camera.isThirdPerson(),
+                    MinecraftClient.getInstance().options.getFovEffectScale().getValue().floatValue()
+            ), 0.1f), 1.5f);
         }
         return movementFovMultiplier;
     }

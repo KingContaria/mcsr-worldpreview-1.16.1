@@ -112,7 +112,7 @@ public abstract class MinecraftClientMixin {
             method = "render",
             at = @At(
                     value = "INVOKE",
-                    target = "Lnet/minecraft/client/util/Window;swapBuffers()V",
+                    target = "Lnet/minecraft/client/util/Window;swapBuffers(Lnet/minecraft/client/util/tracy/TracyFrameCapturer;)V",
                     shift = At.Shift.AFTER
             )
     )

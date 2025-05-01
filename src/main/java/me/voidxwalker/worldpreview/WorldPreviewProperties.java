@@ -1,8 +1,8 @@
 package me.voidxwalker.worldpreview;
 
 import com.mojang.blaze3d.platform.GlConst;
+import com.mojang.blaze3d.systems.ProjectionType;
 import com.mojang.blaze3d.systems.RenderSystem;
-import com.mojang.blaze3d.systems.VertexSorter;
 import me.contaria.speedrunapi.util.TextUtil;
 import me.voidxwalker.worldpreview.mixin.access.EntityAccessor;
 import me.voidxwalker.worldpreview.mixin.access.GameRendererAccessor;
@@ -27,6 +27,7 @@ import net.minecraft.network.packet.s2c.play.ChunkDataS2CPacket;
 import net.minecraft.network.packet.s2c.play.EntitySpawnS2CPacket;
 import net.minecraft.registry.Registries;
 import net.minecraft.util.profiler.Profiler;
+import net.minecraft.util.profiler.Profilers;
 import org.joml.Matrix4f;
 import org.joml.Matrix4fStack;
 
@@ -111,7 +112,7 @@ public class WorldPreviewProperties {
     }
 
     public void tickPackets() {
-        Profiler profiler = MinecraftClient.getInstance().getProfiler();
+        Profiler profiler = Profilers.get();
         int dataLimit = this.getDataLimit();
         int applied = 0;
 
@@ -138,7 +139,7 @@ public class WorldPreviewProperties {
     }
 
     public void tickEntities() {
-        Profiler profiler = MinecraftClient.getInstance().getProfiler();
+        Profiler profiler = Profilers.get();
 
         profiler.swap("update_player_size");
         // clip the player into swimming/crawling mode if necessary
@@ -157,7 +158,7 @@ public class WorldPreviewProperties {
     }
 
     private void tickEntity(Entity entity) {
-        Profiler profiler = MinecraftClient.getInstance().getProfiler();
+        Profiler profiler = Profilers.get();
         profiler.push(() -> Registries.ENTITY_TYPE.getId(entity.getType()).toString());
 
         if (entity.getVehicle() != null) {
@@ -172,12 +173,12 @@ public class WorldPreviewProperties {
 
     public void renderWorld() {
         MinecraftClient client = MinecraftClient.getInstance();
-        Profiler profiler = client.getProfiler();
+        Profiler profiler = Profilers.get();
         Window window = client.getWindow();
 
         profiler.swap("render_preview");
 
-        RenderSystem.clear(GlConst.GL_DEPTH_BUFFER_BIT, MinecraftClient.IS_SYSTEM_MAC);
+        RenderSystem.clear(GlConst.GL_DEPTH_BUFFER_BIT);
         RenderSystem.setProjectionMatrix(new Matrix4f().setOrtho(
                 0.0f,
                 window.getFramebufferWidth(),
@@ -185,11 +186,10 @@ public class WorldPreviewProperties {
                 0.0f,
                 0.1f,
                 1000.0f
-        ), VertexSorter.BY_DISTANCE);
+        ), ProjectionType.PERSPECTIVE);
         Matrix4fStack matrix4fStack = RenderSystem.getModelViewStack();
         matrix4fStack.pushMatrix();
         matrix4fStack.translation(0.0f, 0.0f, 0.0f);
-        RenderSystem.applyModelViewMatrix();
         DiffuseLighting.disableGuiDepthLighting();
 
         profiler.push("light_map");
@@ -202,15 +202,15 @@ public class WorldPreviewProperties {
 
         matrix4fStack.popMatrix();
 
-        RenderSystem.clear(GlConst.GL_DEPTH_BUFFER_BIT, MinecraftClient.IS_SYSTEM_MAC);
+        RenderSystem.clear(GlConst.GL_DEPTH_BUFFER_BIT);
     }
 
     public void renderHud(DrawContext context) {
         MinecraftClient client = MinecraftClient.getInstance();
-        Profiler profiler = client.getProfiler();
+        Profiler profiler = Profilers.get();
         Window window = client.getWindow();
 
-        RenderSystem.clear(GlConst.GL_DEPTH_BUFFER_BIT, MinecraftClient.IS_SYSTEM_MAC);
+        RenderSystem.clear(GlConst.GL_DEPTH_BUFFER_BIT);
         RenderSystem.setProjectionMatrix(new Matrix4f().setOrtho(
                 0.0f,
                 (float) (window.getFramebufferWidth() / window.getScaleFactor()),
@@ -218,11 +218,10 @@ public class WorldPreviewProperties {
                 0.0f,
                 1000.0f,
                 21000.0f
-        ), VertexSorter.BY_Z);
+        ), ProjectionType.ORTHOGRAPHIC);
         Matrix4fStack matrix4fStack = RenderSystem.getModelViewStack();
         matrix4fStack.pushMatrix();
         matrix4fStack.translation(0.0f, 0.0f, -11000.0f);
-        RenderSystem.applyModelViewMatrix();
         DiffuseLighting.enableGuiDepthLighting();
 
         profiler.push("ingame_hud");
@@ -231,7 +230,7 @@ public class WorldPreviewProperties {
 
         matrix4fStack.popMatrix();
 
-        RenderSystem.clear(GlConst.GL_DEPTH_BUFFER_BIT, MinecraftClient.IS_SYSTEM_MAC);
+        RenderSystem.clear(GlConst.GL_DEPTH_BUFFER_BIT);
     }
 
     public void renderMenu(DrawContext context, int mouseX, int mouseY, float delta, GridWidget gridWidget, int width, int height, boolean showMenu) {

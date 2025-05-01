@@ -14,6 +14,7 @@ import net.minecraft.client.session.telemetry.TelemetrySender;
 import net.minecraft.client.session.telemetry.WorldSession;
 import net.minecraft.client.world.ClientWorld;
 import net.minecraft.entity.EntityType;
+import net.minecraft.entity.SpawnReason;
 import net.minecraft.entity.player.PlayerModelPart;
 import net.minecraft.nbt.NbtCompound;
 import net.minecraft.nbt.NbtList;
@@ -93,7 +94,6 @@ public class WorldPreview {
                         null,
                         Collections.emptyMap(),
                         null,
-                        false,
                         Collections.emptyMap(),
                         serverWorld.getServer().getServerLinks()
                 )
@@ -113,10 +113,10 @@ public class WorldPreview {
                 // when it's at 1 only the chunk the player is in gets sent
                 config.chunkDistance - 1,
                 config.chunkDistance - 1,
-                client::getProfiler,
                 WorldPreview.worldRenderer,
                 serverWorld.isDebugWorld(),
-                serverWorld.getSeed()
+                serverWorld.getSeed(),
+                serverWorld.getSeaLevel()
         );
         ClientPlayerEntity player = interactionManager.createPlayer(
                 world,
@@ -162,7 +162,7 @@ public class WorldPreview {
             if (playerData.contains("RootVehicle", 10)) {
                 NbtCompound vehicleData = playerData.getCompound("RootVehicle");
                 UUID uUID = vehicleData.containsUuid("Attach") ? vehicleData.getUuid("Attach") : null;
-                EntityType.loadEntityWithPassengers(vehicleData.getCompound("Entity"), serverWorld, entity -> {
+                EntityType.loadEntityWithPassengers(vehicleData.getCompound("Entity"), serverWorld, SpawnReason.LOAD, entity -> {
                     ((EntityAccessor) entity).worldpreview$setWorld(world);
                     world.addEntity(entity);
                     if (entity.getUuid().equals(uUID)) {

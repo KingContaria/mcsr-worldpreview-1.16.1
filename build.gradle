@@ -29,11 +29,11 @@ dependencies {
 
     // SpeedrunAPI
     // check for the latest versions at https://jitpack.io/#kingcontaria/speedrunapi
-    modImplementation "com.github.KingContaria:SpeedrunAPI:57c6f3e1ec"
+    modImplementation "com.github.KingContaria:SpeedrunAPI:43375ec4fe"
 
     // Sodium
     // check for the latest versions at https://modrinth.com/mod/sodium/versions
-    modCompileOnly "maven.modrinth:sodium:mc1.21.1-0.6.13-fabric"
+    modCompileOnly "maven.modrinth:sodium:mc1.21.4-0.6.13-fabric"
 
     // State-Output
     // check for latest versions at https://jitpack.io/#dev.tildejustin/state-output
