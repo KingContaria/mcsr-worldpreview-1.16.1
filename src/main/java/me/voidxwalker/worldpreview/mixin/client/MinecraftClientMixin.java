@@ -39,7 +39,7 @@ public abstract class MinecraftClientMixin {
     public abstract void setScreen(@Nullable Screen screen);
 
     @Inject(
-            method = "startIntegratedServer(Ljava/lang/String;Ljava/util/function/Function;Ljava/util/function/Function;ZLnet/minecraft/client/MinecraftClient$WorldLoadAction;)V",
+            method = "startIntegratedServer",
             at = @At(
                     value = "INVOKE",
                     target = "Lnet/minecraft/server/integrated/IntegratedServer;isLoading()Z"
@@ -88,12 +88,12 @@ public abstract class MinecraftClientMixin {
             method = "<init>",
             at = @At(
                     value = "INVOKE",
-                    target = "Lnet/minecraft/client/render/WorldRenderer;<init>(Lnet/minecraft/client/MinecraftClient;Lnet/minecraft/client/render/BufferBuilderStorage;)V",
+                    target = "Lnet/minecraft/client/render/WorldRenderer;<init>(Lnet/minecraft/client/MinecraftClient;Lnet/minecraft/client/render/entity/EntityRenderDispatcher;Lnet/minecraft/client/render/block/entity/BlockEntityRenderDispatcher;Lnet/minecraft/client/render/BufferBuilderStorage;)V",
                     shift = At.Shift.AFTER
             )
     )
     private void createWorldPreviewRenderer(CallbackInfo ci) {
-        WorldPreview.worldRenderer = new WorldRenderer(MinecraftClient.getInstance(), new BufferBuilderStorage());
+        WorldPreview.worldRenderer = new WorldRenderer(MinecraftClient.getInstance(), MinecraftClient.getInstance().getEntityRenderDispatcher(), MinecraftClient.getInstance().getBlockEntityRenderDispatcher(), new BufferBuilderStorage());
     }
 
     @ModifyReturnValue(

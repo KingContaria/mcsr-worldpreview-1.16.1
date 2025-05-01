@@ -18,7 +18,7 @@ import net.minecraft.client.network.ClientPlayerEntity;
 import net.minecraft.client.render.Camera;
 import net.minecraft.client.render.Frustum;
 import net.minecraft.entity.Entity;
-import net.minecraft.network.Packet;
+import net.minecraft.network.packet.Packet;
 import net.minecraft.network.packet.s2c.play.ChunkDataS2CPacket;
 import net.minecraft.network.packet.s2c.play.EntityS2CPacket;
 import net.minecraft.network.packet.s2c.play.EntitySetHeadYawS2CPacket;
@@ -30,6 +30,7 @@ import net.minecraft.util.math.*;
 import net.minecraft.world.chunk.Chunk;
 import net.minecraft.world.chunk.ChunkStatus;
 import net.minecraft.world.chunk.WorldChunk;
+import org.joml.Matrix4f;
 import org.spongepowered.asm.mixin.Final;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
@@ -93,7 +94,7 @@ public abstract class ThreadedAnvilChunkStorageMixin implements WPThreadedAnvilC
     @Unique
     private void updateFrustum(ClientPlayerEntity player, Camera camera) {
         MinecraftClient client = MinecraftClient.getInstance();
-        double fov = Math.min(client.options.fov * Math.min(Math.max(player.getFovMultiplier(), 0.1f), 1.5f), 180.0);
+        double fov = Math.min(client.options.getFov().getValue() * Math.min(Math.max(player.getFovMultiplier(), 0.1f), 1.5f), 180.0);
         double aspectRatio = (double) client.getWindow().getFramebufferWidth() / client.getWindow().getFramebufferHeight();
         Vec3d cameraPos;
         float pitch;
@@ -106,14 +107,12 @@ public abstract class ThreadedAnvilChunkStorageMixin implements WPThreadedAnvilC
         if (this.frustum == null || !cameraPos.equals(this.cameraPos) || this.yaw != yaw || this.pitch != pitch || this.fov != fov || this.aspectRatio != aspectRatio) {
             // see GameRenderer#renderWorld
             Matrix4f rotationMatrix = new Matrix4f();
-            rotationMatrix.loadIdentity();
-            rotationMatrix.multiply(Vec3f.POSITIVE_X.getDegreesQuaternion(pitch));
-            rotationMatrix.multiply(Vec3f.POSITIVE_Y.getDegreesQuaternion(yaw + 180.0f));
+            rotationMatrix.rotate(RotationAxis.POSITIVE_X.rotationDegrees(camera.getPitch()));
+            rotationMatrix.rotate(RotationAxis.POSITIVE_Y.rotationDegrees(camera.getYaw() + 180.0F));
 
             // see GameRenderer#getBasicProjectionMatrix
             Matrix4f projectionMatrix = new Matrix4f();
-            projectionMatrix.loadIdentity();
-            projectionMatrix.multiply(Matrix4f.viewboxMatrix(fov, (float) aspectRatio, 0.05f, 32 * 16 * 4.0f));
+            projectionMatrix.mul(new Matrix4f().setPerspective((float) (fov * (Math.PI / 180.0)), (float) aspectRatio, 0.05F, 32 * 16 * 4.0f));
 
             this.frustum = new Frustum(rotationMatrix, projectionMatrix);
             this.frustum.setPosition(cameraPos.getX(), cameraPos.getY(), cameraPos.getZ());

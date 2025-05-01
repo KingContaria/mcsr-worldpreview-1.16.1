@@ -23,7 +23,7 @@ public abstract class ServerPlayerEntityMixin {
             method = "moveToSpawn",
             at = @At(
                     value = "INVOKE",
-                    target = "Ljava/util/Random;nextInt(I)I"
+                    target = "Lnet/minecraft/util/math/random/Random;nextInt(I)I"
             )
     )
     private int setPreviewSpawnPos(int original) {

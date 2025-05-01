@@ -12,7 +12,7 @@ public abstract class WorldRendererMixin {
     @ModifyExpressionValue(
             method = {
                     "reload(Lnet/minecraft/resource/ResourceManager;)V",
-                    "reloadTransparencyShader"
+                    "reloadTransparencyPostProcessor"
             },
             at = @At(
                     value = "INVOKE",

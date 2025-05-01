@@ -6,7 +6,7 @@ import me.voidxwalker.worldpreview.WorldPreviewProperties;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.gui.screen.LevelLoadingScreen;
 import net.minecraft.client.gui.screen.Screen;
-import net.minecraft.client.gui.widget.ButtonWidget;
+import net.minecraft.client.gui.widget.GridWidget;
 import net.minecraft.client.util.InputUtil;
 import net.minecraft.client.util.math.MatrixStack;
 import net.minecraft.text.Text;
@@ -16,12 +16,10 @@ import org.spongepowered.asm.mixin.Unique;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.ModifyVariable;
 
-import java.util.List;
-
 @Mixin(LevelLoadingScreen.class)
 public abstract class LevelLoadingScreenMixin extends Screen {
     @Unique
-    private List<ButtonWidget> buttons;
+    private GridWidget gridWidget;
     @Unique
     private boolean showMenu = true;
 
@@ -71,19 +69,19 @@ public abstract class LevelLoadingScreenMixin extends Screen {
 
     @Unique
     private void renderWorldPreview(WorldPreviewProperties properties, MatrixStack matrices, int mouseX, int mouseY, float delta) {
-        properties.render(matrices, mouseX, mouseY, delta, this.buttons, this.width, this.height, this.showMenu);
+        properties.render(matrices, mouseX, mouseY, delta, this.gridWidget, this.width, this.height, this.showMenu);
     }
 
     @Unique
     private void setShowMenu(boolean showMenu) {
         this.showMenu = showMenu;
-        this.buttons.forEach(button -> button.visible = this.showMenu);
+        this.gridWidget.forEachChild(button -> button.visible = this.showMenu);
     }
 
     @Override
     protected void init() {
-        this.buttons = WorldPreviewProperties.createMenu(this.width, this.height, () -> this.setShowMenu(false), WorldPreview::kill);
-        this.buttons.forEach(button -> this.addDrawableChild(button).visible = this.showMenu);
+        this.gridWidget = WorldPreviewProperties.createMenu(this.width, this.height, () -> this.setShowMenu(false), WorldPreview::kill);
+        this.gridWidget.forEachChild(button -> this.addDrawableChild(button).visible = this.showMenu);
     }
 
     @Override

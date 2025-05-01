@@ -15,10 +15,11 @@ import net.minecraft.server.WorldGenerationProgressListener;
 import net.minecraft.server.world.ChunkTicketType;
 import net.minecraft.server.world.ServerChunkManager;
 import net.minecraft.server.world.ServerWorld;
+import net.minecraft.util.ApiServices;
 import net.minecraft.util.crash.CrashReport;
 import net.minecraft.util.math.ChunkPos;
-import org.spongepowered.asm.mixin.Mixin;
-import org.spongepowered.asm.mixin.Unique;
+import org.slf4j.Logger;
+import org.spongepowered.asm.mixin.*;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.ModifyVariable;
@@ -26,8 +27,23 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
 import java.io.IOException;
 
+@Debug(export = true)
 @Mixin(MinecraftServer.class)
 public abstract class MinecraftServerMixin implements WPMinecraftServer {
+
+    @Shadow
+    @Final
+    private static Logger LOGGER;
+    @Shadow
+    @Final
+    protected ApiServices apiServices;
+    @Shadow
+    private boolean stopped;
+
+    @Shadow
+    public abstract void shutdown();
+    @Shadow
+    public abstract void exit();
 
     @Unique
     protected volatile boolean killed;
@@ -102,16 +118,34 @@ public abstract class MinecraftServerMixin implements WPMinecraftServer {
         return shouldKeepTicking && !this.killed;
     }
 
-    @ModifyExpressionValue(
+    @Inject(
             method = "runServer",
             at = @At(
                     value = "INVOKE",
-                    target = "Lnet/minecraft/server/MinecraftServer;setupServer()Z"
-            )
+                    target = "Lnet/minecraft/server/MinecraftServer;setupServer()Z",
+                    shift = At.Shift.AFTER
+            ),
+            cancellable = true
     )
-    private synchronized boolean killServer(boolean original) {
+    private synchronized void killServer(CallbackInfo ci) {
         this.tooLateToKill = true;
-        return original && !this.killed;
+        if (this.killed) {
+            ci.cancel();
+
+            // the try-finally block doesn't run after cancelling,
+            // so we have to copy it here
+            try {
+                this.stopped = true;
+                this.shutdown();
+            } catch (Throwable var42) {
+                LOGGER.error("Exception stopping the server", var42);
+            } finally {
+                if (this.apiServices.userCache() != null) {
+                    this.apiServices.userCache().clearExecutor();
+                }
+                this.exit();
+            }
+        }
     }
 
     @WrapWithCondition(

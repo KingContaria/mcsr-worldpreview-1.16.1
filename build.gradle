@@ -14,7 +14,7 @@ repositories {
         url "https://jitpack.io"
     }
     maven {
-        url = "https://api.modrinth.com/maven"
+        url "https://api.modrinth.com/maven"
     }
 }
 
@@ -29,11 +29,11 @@ dependencies {
 
     // SpeedrunAPI
     // check for the latest versions at https://jitpack.io/#kingcontaria/speedrunapi
-    modImplementation "com.github.KingContaria:SpeedrunAPI:7dd7817635"
+    modImplementation "com.github.KingContaria:SpeedrunAPI:2ac729b13a"
 
     // Sodium
     // check for the latest versions at https://modrinth.com/mod/sodium/versions
-    modCompileOnly "maven.modrinth:sodium:mc1.18.2-0.4.1"
+    modCompileOnly "maven.modrinth:sodium:mc1.19.4-0.4.10"
 
     // State-Output
     // check for latest versions at https://jitpack.io/#dev.tildejustin/state-output

@@ -5,6 +5,7 @@ import me.voidxwalker.worldpreview.mixin.access.ClientPlayNetworkHandlerAccessor
 import me.voidxwalker.worldpreview.mixin.access.PlayerEntityAccessor;
 import net.fabricmc.loader.api.FabricLoader;
 import net.minecraft.client.MinecraftClient;
+import net.minecraft.client.network.ClientDynamicRegistryType;
 import net.minecraft.client.network.ClientPlayNetworkHandler;
 import net.minecraft.client.network.ClientPlayerEntity;
 import net.minecraft.client.network.ClientPlayerInteractionManager;
@@ -12,12 +13,16 @@ import net.minecraft.client.option.Perspective;
 import net.minecraft.client.render.Camera;
 import net.minecraft.client.render.WorldRenderer;
 import net.minecraft.client.render.entity.PlayerModelPart;
+import net.minecraft.client.util.telemetry.TelemetrySender;
+import net.minecraft.client.util.telemetry.WorldSession;
 import net.minecraft.client.world.ClientWorld;
 import net.minecraft.entity.EntityType;
 import net.minecraft.nbt.NbtCompound;
 import net.minecraft.nbt.NbtList;
-import net.minecraft.network.Packet;
+import net.minecraft.network.packet.Packet;
 import net.minecraft.network.packet.s2c.play.*;
+import net.minecraft.registry.DynamicRegistryManager;
+import net.minecraft.registry.SerializableRegistries;
 import net.minecraft.scoreboard.ScoreboardObjective;
 import net.minecraft.scoreboard.ServerScoreboard;
 import net.minecraft.scoreboard.Team;
@@ -68,9 +73,16 @@ public class WorldPreview {
                 MinecraftClient.getInstance(),
                 null,
                 null,
+                null,
                 MinecraftClient.getInstance().getSession().getProfile(),
-                null
+                new WorldSession(TelemetrySender.NOOP, true, null)
         );
+        ClientPlayNetworkHandlerAccessor networkHandlerAccessor = (ClientPlayNetworkHandlerAccessor) networkHandler;
+        networkHandlerAccessor.standardsettings$setCombinedDynamicRegistries(networkHandlerAccessor.standardsettings$getCombinedDynamicRegistries().with(
+                ClientDynamicRegistryType.REMOTE,
+                new DynamicRegistryManager.ImmutableImpl(SerializableRegistries.streamDynamicEntries(serverWorld.getServer().getCombinedDynamicRegistries())).toImmutable()
+        ));
+
         ClientPlayerInteractionManager interactionManager = new ClientPlayerInteractionManager(
                 MinecraftClient.getInstance(),
                 networkHandler
@@ -80,7 +92,7 @@ public class WorldPreview {
                 networkHandler,
                 new ClientWorld.Properties(serverWorld.getDifficulty(), serverWorld.getServer().isHardcore(), serverWorld.isFlat()),
                 serverWorld.getRegistryKey(),
-                serverWorld.method_40134(),
+                serverWorld.getDimensionEntry(),
                 // WorldPreviews Chunk Distance is one lower than Minecraft's chunkLoadDistance,
                 // when it's at 1 only the chunk the player is in gets sent
                 config.chunkDistance - 1,
