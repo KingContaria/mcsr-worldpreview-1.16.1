@@ -1,10 +1,10 @@
 package me.voidxwalker.worldpreview.mixin.parity;
 
-import com.mojang.datafixers.util.Either;
 import me.voidxwalker.worldpreview.WorldPreview;
 import me.voidxwalker.worldpreview.WorldPreviewMissingChunkException;
 import me.voidxwalker.worldpreview.mixin.access.ThreadedAnvilChunkStorageAccessor;
 import net.minecraft.server.world.ChunkHolder;
+import net.minecraft.server.world.OptionalChunk;
 import net.minecraft.server.world.ServerChunkManager;
 import net.minecraft.server.world.ThreadedAnvilChunkStorage;
 import net.minecraft.util.math.ChunkPos;
@@ -47,10 +47,10 @@ public abstract class ServerChunkManagerMixin {
         if (holder == null) {
             return null;
         }
-        Either<Chunk, ChunkHolder.Unloaded> either = holder.getFutureFor(leastStatus).getNow(null);
-        if (either == null) {
+        OptionalChunk<Chunk> optional = holder.getFutureFor(leastStatus).getNow(null);
+        if (optional == null) {
             return null;
         }
-        return either.left().orElse(null);
+        return optional.orElse(null);
     }
 }

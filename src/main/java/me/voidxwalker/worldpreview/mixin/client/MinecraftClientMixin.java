@@ -7,16 +7,17 @@ import me.voidxwalker.worldpreview.WorldPreview;
 import me.voidxwalker.worldpreview.compat.StateOutputCompat;
 import me.voidxwalker.worldpreview.interfaces.WPMinecraftServer;
 import net.minecraft.client.MinecraftClient;
-import net.minecraft.client.gui.screen.LevelLoadingScreen;
 import net.minecraft.client.gui.screen.ProgressScreen;
 import net.minecraft.client.gui.screen.Screen;
 import net.minecraft.client.gui.screen.TitleScreen;
+import net.minecraft.client.gui.screen.world.LevelLoadingScreen;
 import net.minecraft.client.render.BufferBuilderStorage;
 import net.minecraft.client.render.WorldRenderer;
 import net.minecraft.client.world.ClientWorld;
 import net.minecraft.server.integrated.IntegratedServer;
 import org.jetbrains.annotations.Nullable;
 import org.objectweb.asm.Opcodes;
+import org.spongepowered.asm.mixin.Final;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
 import org.spongepowered.asm.mixin.injection.At;
@@ -25,6 +26,9 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
 @Mixin(MinecraftClient.class)
 public abstract class MinecraftClientMixin {
+    @Shadow
+    @Final
+    private BufferBuilderStorage bufferBuilders;
     @Shadow
     @Nullable
     public Screen currentScreen;
@@ -70,7 +74,7 @@ public abstract class MinecraftClientMixin {
     }
 
     @ModifyExpressionValue(
-            method = "disconnect(Lnet/minecraft/client/gui/screen/Screen;)V",
+            method = "disconnect(Lnet/minecraft/client/gui/screen/Screen;Z)V",
             at = @At(
                     value = "FIELD",
                     target = "Lnet/minecraft/client/MinecraftClient;world:Lnet/minecraft/client/world/ClientWorld;",
@@ -93,7 +97,7 @@ public abstract class MinecraftClientMixin {
             )
     )
     private void createWorldPreviewRenderer(CallbackInfo ci) {
-        WorldPreview.worldRenderer = new WorldRenderer(MinecraftClient.getInstance(), MinecraftClient.getInstance().getEntityRenderDispatcher(), MinecraftClient.getInstance().getBlockEntityRenderDispatcher(), new BufferBuilderStorage());
+        WorldPreview.worldRenderer = new WorldRenderer(MinecraftClient.getInstance(), MinecraftClient.getInstance().getEntityRenderDispatcher(), MinecraftClient.getInstance().getBlockEntityRenderDispatcher(), new BufferBuilderStorage(this.bufferBuilders.getBlockBufferBuildersPool().getAvailableBuilderCount()));
     }
 
     @ModifyReturnValue(

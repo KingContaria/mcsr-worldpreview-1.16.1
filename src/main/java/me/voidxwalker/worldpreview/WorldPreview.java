@@ -6,24 +6,23 @@ import me.voidxwalker.worldpreview.mixin.access.EntityAccessor;
 import me.voidxwalker.worldpreview.mixin.access.PlayerEntityAccessor;
 import net.fabricmc.loader.api.FabricLoader;
 import net.minecraft.client.MinecraftClient;
-import net.minecraft.client.network.ClientDynamicRegistryType;
-import net.minecraft.client.network.ClientPlayNetworkHandler;
-import net.minecraft.client.network.ClientPlayerEntity;
-import net.minecraft.client.network.ClientPlayerInteractionManager;
+import net.minecraft.client.network.*;
 import net.minecraft.client.option.Perspective;
 import net.minecraft.client.render.Camera;
 import net.minecraft.client.render.WorldRenderer;
 import net.minecraft.client.render.entity.PlayerModelPart;
-import net.minecraft.client.util.telemetry.TelemetrySender;
-import net.minecraft.client.util.telemetry.WorldSession;
+import net.minecraft.client.session.telemetry.TelemetrySender;
+import net.minecraft.client.session.telemetry.WorldSession;
 import net.minecraft.client.world.ClientWorld;
 import net.minecraft.entity.EntityType;
 import net.minecraft.nbt.NbtCompound;
 import net.minecraft.nbt.NbtList;
 import net.minecraft.network.packet.Packet;
+import net.minecraft.network.packet.c2s.common.SyncedClientOptions;
 import net.minecraft.network.packet.s2c.play.*;
 import net.minecraft.registry.DynamicRegistryManager;
 import net.minecraft.registry.SerializableRegistries;
+import net.minecraft.scoreboard.ScoreboardDisplaySlot;
 import net.minecraft.scoreboard.ScoreboardObjective;
 import net.minecraft.scoreboard.ServerScoreboard;
 import net.minecraft.scoreboard.Team;
@@ -33,6 +32,7 @@ import net.minecraft.world.GameRules;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.Queue;
 import java.util.UUID;
@@ -60,10 +60,17 @@ public class WorldPreview {
     }
 
     public static boolean configure(ServerWorld serverWorld) {
+        MinecraftClient client = MinecraftClient.getInstance();
+        
         WPFakeServerPlayerEntity fakePlayer;
         try {
             CALCULATING_SPAWN.set(true);
-            fakePlayer = new WPFakeServerPlayerEntity(serverWorld.getServer(), serverWorld, MinecraftClient.getInstance().getSession().getProfile());
+            fakePlayer = new WPFakeServerPlayerEntity(
+                    serverWorld.getServer(),
+                    serverWorld,
+                    client.getGameProfile(),
+                    SyncedClientOptions.createDefault()
+            );
         } catch (WorldPreviewMissingChunkException e) {
             return false;
         } finally {
@@ -71,21 +78,27 @@ public class WorldPreview {
         }
 
         ClientPlayNetworkHandler networkHandler = new ClientPlayNetworkHandler(
-                MinecraftClient.getInstance(),
+                client,
                 null,
-                null,
-                null,
-                MinecraftClient.getInstance().getSession().getProfile(),
-                new WorldSession(TelemetrySender.NOOP, true, null, null)
+                new ClientConnectionState(
+                        client.getGameProfile(),
+                        new WorldSession(TelemetrySender.NOOP, true, null, null),
+                        ClientDynamicRegistryType.createCombinedDynamicRegistries().with(
+                                ClientDynamicRegistryType.REMOTE,
+                                new DynamicRegistryManager.ImmutableImpl(SerializableRegistries.streamDynamicEntries(serverWorld.getServer().getCombinedDynamicRegistries())).toImmutable()
+                        ).getCombinedRegistryManager(),
+                        serverWorld.getEnabledFeatures(),
+                        null,
+                        null,
+                        null,
+                        Collections.emptyMap(),
+                        null,
+                        false
+                )
         );
-        ClientPlayNetworkHandlerAccessor networkHandlerAccessor = (ClientPlayNetworkHandlerAccessor) networkHandler;
-        networkHandlerAccessor.standardsettings$setCombinedDynamicRegistries(networkHandlerAccessor.standardsettings$getCombinedDynamicRegistries().with(
-                ClientDynamicRegistryType.REMOTE,
-                new DynamicRegistryManager.ImmutableImpl(SerializableRegistries.streamDynamicEntries(serverWorld.getServer().getCombinedDynamicRegistries())).toImmutable()
-        ));
 
         ClientPlayerInteractionManager interactionManager = new ClientPlayerInteractionManager(
-                MinecraftClient.getInstance(),
+                client,
                 networkHandler
         );
 
@@ -98,7 +111,7 @@ public class WorldPreview {
                 // when it's at 1 only the chunk the player is in gets sent
                 config.chunkDistance - 1,
                 config.chunkDistance - 1,
-                MinecraftClient.getInstance()::getProfiler,
+                client::getProfiler,
                 WorldPreview.worldRenderer,
                 serverWorld.isDebugWorld(),
                 serverWorld.getSeed()
@@ -149,7 +162,7 @@ public class WorldPreview {
                 UUID uUID = vehicleData.containsUuid("Attach") ? vehicleData.getUuid("Attach") : null;
                 EntityType.loadEntityWithPassengers(vehicleData.getCompound("Entity"), serverWorld, entity -> {
                     ((EntityAccessor) entity).worldpreview$setWorld(world);
-                    world.addEntity(entity.getId(), entity);
+                    world.addEntity(entity);
                     if (entity.getUuid().equals(uUID)) {
                         player.startRiding(entity, true);
                     }
@@ -180,19 +193,19 @@ public class WorldPreview {
         for (Team team : scoreboard.getTeams()) {
             packetQueue.add(TeamS2CPacket.updateTeam(team, true));
         }
-        for (int i = 0; i < 19; ++i) {
-            ScoreboardObjective scoreboardObjective = scoreboard.getObjectiveForSlot(i);
-            if (scoreboardObjective == null || set.contains(scoreboardObjective)) {
+        for (ScoreboardDisplaySlot slot : ScoreboardDisplaySlot.values()) {
+            ScoreboardObjective objective = scoreboard.getObjectiveForSlot(slot);
+            if (objective == null || set.contains(objective)) {
                 continue;
             }
-            packetQueue.addAll(scoreboard.createChangePackets(scoreboardObjective));
-            set.add(scoreboardObjective);
+            packetQueue.addAll(scoreboard.createChangePackets(objective));
+            set.add(objective);
         }
 
         // make player model parts visible
         int playerModelPartsBitMask = 0;
         for (PlayerModelPart playerModelPart : PlayerModelPart.values()) {
-            if (MinecraftClient.getInstance().options.isPlayerModelPartEnabled(playerModelPart)) {
+            if (client.options.isPlayerModelPartEnabled(playerModelPart)) {
                 playerModelPartsBitMask |= playerModelPart.getBitFlag();
             }
         }
@@ -203,14 +216,14 @@ public class WorldPreview {
         player.prevCapeY = player.capeY = player.getY();
         player.prevCapeZ = player.capeZ = player.getZ();
 
-        world.addPlayer(player.getId(), player);
+        world.addEntity(player);
         world.getChunkManager().setChunkMapCenter(player.getChunkPos().x, player.getChunkPos().z);
 
         ((ClientPlayNetworkHandlerAccessor) player.networkHandler).worldpreview$setWorld(world);
 
         // camera has to be updated early for chunk/entity data culling to work
         // we pass the fake player, so we know the call comes from here in CameraMixin#modifyCameraY
-        Perspective perspective = MinecraftClient.getInstance().options.getPerspective();
+        Perspective perspective = client.options.getPerspective();
         camera.update(world, fakePlayer, !perspective.isFirstPerson(), perspective.isFrontView(), 1.0f);
 
         set(world, player, interactionManager, camera, packetQueue);

@@ -29,11 +29,11 @@ dependencies {
 
     // SpeedrunAPI
     // check for the latest versions at https://jitpack.io/#kingcontaria/speedrunapi
-    modImplementation "com.github.KingContaria:SpeedrunAPI:b045e9d132"
+    modImplementation "com.github.KingContaria:SpeedrunAPI:caa9b86560"
 
     // Sodium
     // check for the latest versions at https://modrinth.com/mod/sodium/versions
-    modCompileOnly "maven.modrinth:sodium:mc1.20.1-0.5.13-fabric"
+    modCompileOnly "maven.modrinth:sodium:mc1.20.6-0.5.11"
 
     // State-Output
     // check for latest versions at https://jitpack.io/#dev.tildejustin/state-output
@@ -50,12 +50,12 @@ processResources {
 
 tasks.withType(JavaCompile).configureEach {
     it.options.encoding = "UTF-8"
-    it.options.release.set(17)
+    it.options.release.set(21)
 }
 
 java {
-    sourceCompatibility = JavaVersion.VERSION_17
-    targetCompatibility = JavaVersion.VERSION_17
+    sourceCompatibility = JavaVersion.VERSION_21
+    targetCompatibility = JavaVersion.VERSION_21
 
     withSourcesJar()
 }

@@ -1,23 +1,31 @@
 package me.voidxwalker.worldpreview.mixin.client.render;
 
-import com.llamalad7.mixinextras.injector.v2.WrapWithCondition;
+import com.llamalad7.mixinextras.injector.wrapoperation.Operation;
+import com.llamalad7.mixinextras.injector.wrapoperation.WrapOperation;
 import me.voidxwalker.worldpreview.WorldPreview;
 import me.voidxwalker.worldpreview.WorldPreviewProperties;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.gui.DrawContext;
-import net.minecraft.client.gui.screen.LevelLoadingScreen;
 import net.minecraft.client.gui.screen.Screen;
+import net.minecraft.client.gui.screen.world.LevelLoadingScreen;
 import net.minecraft.client.gui.widget.GridWidget;
 import net.minecraft.client.util.InputUtil;
+import net.minecraft.server.WorldGenerationProgressTracker;
 import net.minecraft.text.Text;
 import org.lwjgl.glfw.GLFW;
+import org.spongepowered.asm.mixin.Final;
 import org.spongepowered.asm.mixin.Mixin;
+import org.spongepowered.asm.mixin.Shadow;
 import org.spongepowered.asm.mixin.Unique;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.ModifyVariable;
 
 @Mixin(LevelLoadingScreen.class)
 public abstract class LevelLoadingScreenMixin extends Screen {
+    @Shadow
+    @Final
+    private WorldGenerationProgressTracker progressProvider;
+
     @Unique
     private GridWidget gridWidget;
     @Unique
@@ -33,7 +41,7 @@ public abstract class LevelLoadingScreenMixin extends Screen {
             ordinal = 2
     )
     private int moveChunkMapX(int i) {
-        return 45;
+        return this.progressProvider.getSize();
     }
 
     @ModifyVariable(
@@ -42,29 +50,31 @@ public abstract class LevelLoadingScreenMixin extends Screen {
             ordinal = 3
     )
     private int moveChunkMapY(int i) {
-        return this.height - 75;
+        return this.height - this.progressProvider.getSize();
     }
 
-    @WrapWithCondition(
+    @WrapOperation(
             method = "render",
             at = @At(
                     value = "INVOKE",
-                    target = "Lnet/minecraft/client/gui/screen/LevelLoadingScreen;renderBackground(Lnet/minecraft/client/gui/DrawContext;)V"
+                    target = "Lnet/minecraft/client/gui/screen/Screen;render(Lnet/minecraft/client/gui/DrawContext;IIF)V"
             )
     )
-    private boolean renderWorldPreview(LevelLoadingScreen screen, DrawContext ignored, DrawContext context, int mouseX, int mouseY, float delta) {
+    private void renderWorldPreview(LevelLoadingScreen screen, DrawContext context, int mouseX, int mouseY, float delta, Operation<Void> original) {
         WorldPreviewProperties properties = WorldPreview.properties;
         if (properties == null) {
-            return true;
+            this.gridWidget.forEachChild(widget -> widget.visible = false);
+            original.call(screen, context, mouseX, mouseY, delta);
+            this.gridWidget.forEachChild(widget -> widget.visible = this.showMenu);
+            return;
         }
         if (!properties.isInitialized()) {
             properties.initialize();
         }
         if (WorldPreview.isKilled()) {
-            return false;
+            return;
         }
         properties.run(p -> this.renderWorldPreview(p, context, mouseX, mouseY, delta));
-        return false;
     }
 
     @Unique

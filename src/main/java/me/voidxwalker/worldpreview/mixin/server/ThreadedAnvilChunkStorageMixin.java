@@ -1,7 +1,6 @@
 package me.voidxwalker.worldpreview.mixin.server;
 
 import com.llamalad7.mixinextras.injector.ModifyReturnValue;
-import com.mojang.datafixers.util.Either;
 import it.unimi.dsi.fastutil.ints.Int2ObjectMap;
 import it.unimi.dsi.fastutil.ints.IntOpenHashSet;
 import it.unimi.dsi.fastutil.ints.IntSet;
@@ -24,6 +23,7 @@ import net.minecraft.network.packet.s2c.play.EntityS2CPacket;
 import net.minecraft.network.packet.s2c.play.EntitySetHeadYawS2CPacket;
 import net.minecraft.network.packet.s2c.play.LightUpdateS2CPacket;
 import net.minecraft.server.world.ChunkHolder;
+import net.minecraft.server.world.OptionalChunk;
 import net.minecraft.server.world.ServerWorld;
 import net.minecraft.server.world.ThreadedAnvilChunkStorage;
 import net.minecraft.util.math.*;
@@ -281,11 +281,11 @@ public abstract class ThreadedAnvilChunkStorageMixin implements WPThreadedAnvilC
 
     @Unique
     private WorldChunk getWorldChunk(ChunkHolder holder) {
-        Either<Chunk, ChunkHolder.Unloaded> either = holder.getFutureFor(ChunkStatus.FULL).getNow(null);
-        if (either == null) {
+        OptionalChunk<Chunk> optional = holder.getFutureFor(ChunkStatus.FULL).getNow(null);
+        if (optional == null) {
             return null;
         }
-        Chunk chunk = either.left().orElse(null);
+        Chunk chunk = optional.orElse(null);
         if (chunk instanceof WorldChunk) {
             return (WorldChunk) chunk;
         }
@@ -319,11 +319,11 @@ public abstract class ThreadedAnvilChunkStorageMixin implements WPThreadedAnvilC
         this.updateFrustum(properties.player, properties.camera);
 
         for (ChunkHolder holder : this.chunkHolders.values()) {
-            Either<Chunk, ChunkHolder.Unloaded> either = holder.getFutureFor(ChunkStatus.FULL).getNow(null);
-            if (either == null) {
+            OptionalChunk<Chunk> optional = holder.getFutureFor(ChunkStatus.FULL).getNow(null);
+            if (optional == null) {
                 continue;
             }
-            WorldChunk worldChunk = (WorldChunk) either.left().orElse(null);
+            WorldChunk worldChunk = (WorldChunk) optional.orElse(null);
             if (worldChunk == null) {
                 continue;
             }

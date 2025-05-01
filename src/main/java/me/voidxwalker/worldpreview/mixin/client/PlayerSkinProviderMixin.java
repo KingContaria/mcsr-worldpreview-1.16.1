@@ -1,29 +1,27 @@
 package me.voidxwalker.worldpreview.mixin.client;
 
-import com.llamalad7.mixinextras.injector.wrapoperation.Operation;
-import com.llamalad7.mixinextras.injector.wrapoperation.WrapOperation;
 import me.voidxwalker.worldpreview.WorldPreview;
-import net.minecraft.client.texture.PlayerSkinProvider;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
+import org.spongepowered.asm.mixin.injection.ModifyArg;
 
-import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executor;
 
-@Mixin(PlayerSkinProvider.class)
+@Mixin(targets = "net/minecraft/client/texture/PlayerSkinProvider$1")
 public abstract class PlayerSkinProviderMixin {
 
-    @WrapOperation(
-            method = "loadSkin(Lcom/mojang/authlib/GameProfile;Lnet/minecraft/client/texture/PlayerSkinProvider$SkinTextureAvailableCallback;Z)V",
+    @ModifyArg(
+            method = "load(Lnet/minecraft/client/texture/PlayerSkinProvider$Key;)Ljava/util/concurrent/CompletableFuture;",
             at = @At(
                     value = "INVOKE",
-                    target = "Ljava/util/concurrent/ExecutorService;execute(Ljava/lang/Runnable;)V"
-            )
+                    target = "Ljava/util/concurrent/CompletableFuture;supplyAsync(Ljava/util/function/Supplier;Ljava/util/concurrent/Executor;)Ljava/util/concurrent/CompletableFuture;"
+            ),
+            index = 1
     )
-    private void immediatelyGetSkinInPreview(ExecutorService serverWorkerExecutor, Runnable runnable, Operation<Void> original) {
+    private Executor immediatelyGetSkinInPreview(Executor executor) {
         if (WorldPreview.renderingPreview) {
-            runnable.run();
-        } else {
-            original.call(serverWorkerExecutor, runnable);
+            return Runnable::run;
         }
+        return executor;
     }
 }

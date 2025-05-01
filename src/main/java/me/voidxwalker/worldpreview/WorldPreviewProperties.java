@@ -19,7 +19,6 @@ import net.minecraft.client.render.Camera;
 import net.minecraft.client.render.DiffuseLighting;
 import net.minecraft.client.render.WorldRenderer;
 import net.minecraft.client.util.Window;
-import net.minecraft.client.util.math.MatrixStack;
 import net.minecraft.client.world.ClientWorld;
 import net.minecraft.entity.Entity;
 import net.minecraft.network.listener.ClientPlayPacketListener;
@@ -30,6 +29,7 @@ import net.minecraft.registry.Registries;
 import net.minecraft.util.Util;
 import net.minecraft.util.profiler.Profiler;
 import org.joml.Matrix4f;
+import org.joml.Matrix4fStack;
 
 import java.util.Objects;
 import java.util.Queue;
@@ -187,19 +187,21 @@ public class WorldPreviewProperties {
                 0.1f,
                 1000.0f
         ), VertexSorter.BY_DISTANCE);
-        MatrixStack matrixStack = RenderSystem.getModelViewStack();
-        matrixStack.loadIdentity();
-        matrixStack.translate(0.0, 0.0, 0.0);
+        Matrix4fStack matrix4fStack = RenderSystem.getModelViewStack();
+        matrix4fStack.pushMatrix();
+        matrix4fStack.translation(0.0f, 0.0f, 0.0f);
         RenderSystem.applyModelViewMatrix();
         DiffuseLighting.disableGuiDepthLighting();
 
         profiler.push("light_map");
         client.gameRenderer.getLightmapTextureManager().tick();
         profiler.swap("render_world");
-        client.gameRenderer.renderWorld(0.0F, Util.getMeasuringTimeNano(), new MatrixStack());
+        client.gameRenderer.renderWorld(0.0F, Util.getMeasuringTimeNano());
         profiler.swap("entity_outlines");
         client.worldRenderer.drawEntityOutlinesFramebuffer();
         profiler.pop();
+
+        matrix4fStack.popMatrix();
 
         RenderSystem.clear(GlConst.GL_DEPTH_BUFFER_BIT, MinecraftClient.IS_SYSTEM_MAC);
     }
@@ -218,15 +220,17 @@ public class WorldPreviewProperties {
                 1000.0f,
                 21000.0f
         ), VertexSorter.BY_Z);
-        MatrixStack matrixStack = RenderSystem.getModelViewStack();
-        matrixStack.loadIdentity();
-        matrixStack.translate(0.0, 0.0, -2000.0);
+        Matrix4fStack matrix4fStack = RenderSystem.getModelViewStack();
+        matrix4fStack.pushMatrix();
+        matrix4fStack.translation(0.0f, 0.0f, -11000.0f);
         RenderSystem.applyModelViewMatrix();
         DiffuseLighting.enableGuiDepthLighting();
 
         profiler.push("ingame_hud");
         client.inGameHud.render(context, 0.0F);
         profiler.pop();
+
+        matrix4fStack.popMatrix();
 
         RenderSystem.clear(GlConst.GL_DEPTH_BUFFER_BIT, MinecraftClient.IS_SYSTEM_MAC);
     }

@@ -5,17 +5,17 @@ import com.llamalad7.mixinextras.injector.ModifyReturnValue;
 import com.llamalad7.mixinextras.injector.v2.WrapWithCondition;
 import com.llamalad7.mixinextras.injector.wrapoperation.Operation;
 import com.llamalad7.mixinextras.injector.wrapoperation.WrapOperation;
-import com.llamalad7.mixinextras.sugar.Share;
-import com.llamalad7.mixinextras.sugar.ref.LocalRef;
+import com.llamalad7.mixinextras.sugar.Local;
 import me.voidxwalker.worldpreview.WorldPreview;
 import me.voidxwalker.worldpreview.interfaces.WPMinecraftServer;
 import me.voidxwalker.worldpreview.interfaces.WPThreadedAnvilChunkStorage;
+import me.voidxwalker.worldpreview.mixin.access.ServerWorldAccessor;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.WorldGenerationProgressListener;
 import net.minecraft.server.world.ChunkTicketType;
-import net.minecraft.server.world.ServerChunkManager;
 import net.minecraft.server.world.ServerWorld;
 import net.minecraft.util.ApiServices;
+import net.minecraft.util.Unit;
 import net.minecraft.util.crash.CrashReport;
 import net.minecraft.util.math.ChunkPos;
 import org.slf4j.Logger;
@@ -81,18 +81,6 @@ public abstract class MinecraftServerMixin implements WPMinecraftServer {
         return serverWorld;
     }
 
-    @WrapOperation(
-            method = "prepareStartRegion",
-            at = @At(
-                    value = "INVOKE",
-                    target = "Lnet/minecraft/server/world/ServerChunkManager;addTicket(Lnet/minecraft/server/world/ChunkTicketType;Lnet/minecraft/util/math/ChunkPos;ILjava/lang/Object;)V"
-            )
-    )
-    private void captureChunkTicketInformation(ServerChunkManager chunkManager, ChunkTicketType<Object> ticketType, ChunkPos pos, int radius, Object argument, Operation<Void> original, @Share("removeTicket") LocalRef<Runnable> removeTicket) {
-        removeTicket.set(() -> chunkManager.removeTicket(ticketType, pos, radius, argument));
-        original.call(chunkManager, ticketType, pos, radius, argument);
-    }
-
     @Inject(
             method = "prepareStartRegion",
             at = @At(
@@ -102,9 +90,9 @@ public abstract class MinecraftServerMixin implements WPMinecraftServer {
             ),
             cancellable = true
     )
-    private void killWorldGen(WorldGenerationProgressListener worldGenerationProgressListener, CallbackInfo ci, @Share("removeTicket") LocalRef<Runnable> removeTicket) {
+    private void killWorldGen(WorldGenerationProgressListener worldGenerationProgressListener, CallbackInfo ci, @Local ServerWorld serverWorld) {
         if (this.killed) {
-            removeTicket.get().run();
+            serverWorld.getChunkManager().removeTicket(ChunkTicketType.START, new ChunkPos(serverWorld.getSpawnPos()), ((ServerWorldAccessor) serverWorld).worldpreview$getSpawnChunkRadius(), Unit.INSTANCE);
             worldGenerationProgressListener.stop();
             ci.cancel();
         }
