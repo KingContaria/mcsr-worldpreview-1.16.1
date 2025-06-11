@@ -28,8 +28,8 @@ dependencies {
     modImplementation "net.fabricmc:fabric-loader:$loader_version"
 
     // SpeedrunAPI
-    // check for the latest versions at https://jitpack.io/#kingcontaria/speedrunapi
-    modImplementation "com.github.KingContaria:SpeedrunAPI:caa9b86560"
+    // check for the latest versions at https://jitpack.io/#contariaa/speedrunapi
+    modImplementation "com.github.contariaa:SpeedrunAPI:42b1369cd8"
 
     // Sodium
     // check for the latest versions at https://modrinth.com/mod/sodium/versions
