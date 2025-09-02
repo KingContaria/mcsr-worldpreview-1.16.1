@@ -27,6 +27,7 @@ dependencies {
     // SpeedrunAPI
     // check for the latest versions at https://jitpack.io/#contariaa/speedrunapi
     modImplementation "com.github.contariaa:SpeedrunAPI:40b44ae2a5"
+    annotationProcessor "com.github.bawnorton.mixinsquared:mixinsquared-fabric:0.1.1"
 
     // State-Output
     // check for latest versions at https://jitpack.io/#dev.tildejustin/state-output
