@@ -53,6 +53,11 @@ public class WorldPreview {
     private static boolean logPreviewStart;
     private static boolean kill;
 
+    // trick SleepBackground into being compatible by
+    // just pretending the fields it needs still do stuff
+    public static boolean inPreview;
+    public static boolean freezePreview;
+
     public static void set(ClientWorld world, ClientPlayerEntity player, ClientPlayerInteractionManager interactionManager, Camera camera, Queue<Packet<?>> packetQueue) {
         WorldPreview.properties = new WorldPreviewProperties(world, player, interactionManager, camera, packetQueue);
     }
