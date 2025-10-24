@@ -22,6 +22,7 @@
     "client.render.InGameHudMixin",
     "client.render.LevelLoadingScreenMixin",
     "client.render.WorldRendererMixin",
+    "compat.fabric_networking_api_v1.ClientPlayNetworkHandlerMixin",
     "compat.sodium.ChunkTrackerMixin",
     "parity.EntityMixin",
     "parity.ServerChunkManagerMixin",
