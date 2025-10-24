@@ -29,7 +29,7 @@ dependencies {
 
     // SpeedrunAPI
     // check for the latest versions at https://jitpack.io/#contariaa/speedrunapi
-    modImplementation "com.github.contariaa:SpeedrunAPI:42b1369cd8"
+    modImplementation "com.github.contariaa:SpeedrunAPI:5e508294ca"
 
     // Sodium
     // check for the latest versions at https://modrinth.com/mod/sodium/versions
