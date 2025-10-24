@@ -21,6 +21,7 @@
     "client.render.HeldItemRendererMixin",
     "client.render.InGameHudMixin",
     "client.render.LevelLoadingScreenMixin",
+    "compat.fabric_networking_api_v1.ClientPlayNetworkHandlerMixin",
     "compat.sodium.ChunkTrackerMixin",
     "parity.EntityMixin",
     "parity.ServerChunkManagerMixin",
