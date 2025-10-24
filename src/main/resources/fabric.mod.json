@@ -41,7 +41,6 @@
   },
   "breaks": {
     "seedqueue": "<1.5",
-    "sleepbackground": "<2.0",
     "sodium": [ "v1", "v2", "<2.0.1" ],
     "sodiummac": [ "v2", "v3" ]
   }
