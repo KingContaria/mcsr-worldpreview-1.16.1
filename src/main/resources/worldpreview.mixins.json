@@ -32,5 +32,6 @@
   ],
   "injectors": {
     "defaultRequire": 1
-  }
+  },
+  "plugin": "me.contaria.speedrunapi.mixin_plugin.SpeedrunMixinConfigPlugin"
 }
