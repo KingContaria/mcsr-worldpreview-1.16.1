@@ -16,6 +16,7 @@
     "client.MinecraftClientMixin",
     "client.PlayerListEntryMixin",
     "client.PlayerSkinProviderMixin",
+    "client.render.ChunkRendererMixin",
     "client.render.GameRendererMixin",
     "client.render.HeldItemRendererMixin",
     "client.render.InGameHudMixin",
