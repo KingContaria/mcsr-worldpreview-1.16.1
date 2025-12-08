@@ -26,7 +26,7 @@ dependencies {
 
     // SpeedrunAPI
     // check for the latest versions at https://jitpack.io/#contariaa/speedrunapi
-    modImplementation "com.github.contariaa:SpeedrunAPI:70dd4ec9d9"
+    modImplementation "com.github.contariaa:SpeedrunAPI:8ce9b0f490"
     annotationProcessor "com.github.bawnorton.mixinsquared:mixinsquared-fabric:0.1.1"
 
     // Sodium
